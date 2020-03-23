@@ -12,4 +12,12 @@ RUN update-alternatives --install /usr/bin/pip pip /usr/bin/pip3 3
 RUN pip install --upgrade pip
 RUN pip install django
 
+RUN mkdir /var/www
+COPY yaniv /var/www/yaniv
+
+WORKDIR /var/www/yaniv
+
+EXPOSE 8080
+
+ENTRYPOINT python manage.py runserver 0.0.0.0:8080
 
