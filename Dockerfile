@@ -11,6 +11,7 @@ RUN update-alternatives --install /usr/bin/python python /usr/bin/python3 3
 RUN update-alternatives --install /usr/bin/pip pip /usr/bin/pip3 3
 RUN pip install --upgrade pip
 RUN pip install django
+RUN pip install -U channels
 
 RUN mkdir /var/www
 COPY yaniv /var/www/yaniv
