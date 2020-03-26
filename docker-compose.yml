@@ -1,0 +1,12 @@
+django:
+  build: .
+  links:
+    - mysql:mysql
+    - redis:redis
+mysql:
+  image: mysql:latest
+  environment:
+    - MYSQL_DATABASE=django
+    - MYSQL_ROOT_PASSWORD=mysql
+redis:
+  image: redis:latest
