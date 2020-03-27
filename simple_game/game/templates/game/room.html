@@ -1,0 +1,162 @@
+<!-- game/templates/game/room.html -->
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <title>Room</title>
+    <!-- <link rel="stylesheet" href="https://deck-of-cards.js.org/example.css"> -->
+    <link rel="stylesheet" href="{% static 'game/deck-of-cards-master/example/example.css' %}">
+</head>
+<body>
+    <textarea id="game-log" cols="100" rows="20"></textarea><br>
+    <input id="game-message-input" type="text" size="100"><br>
+    <input id="game-message-submit" type="button" value="Send">
+    {{ room_name|json_script:"room-name" }}
+    <!-- <script src="https://deck-of-cards.js.org/dist/deck.min.js"></script> -->
+    <script src="{% static 'game/deck-of-cards-master/dist/deck.js' %}"></script>
+    <div id="container"></div>
+    <script>
+
+        const room_name = JSON.parse(document.getElementById('room-name').textContent);
+        const wsAdress = 'ws://'
+                          + window.location.host
+                          + '/ws/game/'
+                          + room_name
+                          + '/'
+        const gameSocket = new WebSocket(wsAdress);
+        var $container = document.getElementById('container');
+
+
+        // create Deck
+        var deck = Deck(true, gameSocket);
+        deck.mount($container);
+
+
+
+        // for (const i of Array(2).keys()) {
+        //     var card = deck.cards[i];
+        //     card.animateTo({
+        //         delay: 1000 + i * 2, // wait 1 second + i * 2 ms
+        //         duration: 500,
+        //         ease: 'quartOut',
+        //
+        //         x: Math.random() * window.innerWidth - window.innerWidth / 2,
+        //         y: Math.random() * window.innerHeight - window.innerHeight / 2
+        //     });
+        //     card.setSide('front');
+        // };
+        //
+        // var card = deck.cards[0];
+        // // // Allow to move/drag it
+        // card.disableDragging();
+        // card.enableFlipping();
+
+
+
+
+        // var Button = function (id, value) {
+        //     this.id = id;
+        //     this.value = value;
+        //
+        //     this.draw = function () {
+        //         this.element = document.createElement("input");
+        //         this.element.type = "button";
+        //         this.element.id = id;
+        //         this.element.value = value;
+        //         document.getElementById("container").appendChild(this.element);
+        //     }
+        // };
+        //
+        // Button.prototype.addEventListener = function(event, handler){
+        //     var el = this.element;
+        //     if(!el){
+        //         throw 'Not yet rendered';
+        //     }
+        //     if (el.addEventListener){
+        //         el.addEventListener(event, handler, false);
+        //     } else if (el.attachEvent){
+        //         el.attachEvent('on' + event, handler);
+        //     }
+        // };
+        //
+        // var myButton = new Button('btn1', "Test Button");
+        // myButton.draw();
+        // myButton.addEventListener('click', function(){
+        //     alert('ok')
+        // });
+        //
+        //
+        //
+        //
+        // var Test = function (name) {
+        //     this.name = name;
+        // };
+        //
+        // Test.prototype.addEventListener = function(event, handler){
+        //     var el = this.element;
+        //     if(!el){
+        //         throw 'Not yet rendered';
+        //     }
+        //     if (el.addEventListener){
+        //         el.addEventListener(event, handler, false);
+        //     } else if (el.attachEvent){
+        //         el.attachEvent('on' + event, handler);
+        //     }
+        // };
+        //
+        // var myTest = new Test('test1');
+
+
+
+
+        // gameSocket.onopen = function(event) {
+        //   gameSocket.send(JSON.stringify({
+        //       'message': 'ws://'
+        //       + window.location.host
+        //       + '/ws/game/'
+        //       + room_name
+        //       + '/'
+        //   }));
+        // };
+
+        // document.querySelector('#game-message-submit').onclick = function(e) {
+        //     const messageInputDom = document.querySelector('#game-message-input');
+        //     const message = messageInputDom.value;
+        //     const xx = deck.cards[0].suit;
+        //     gameSocket.send(JSON.stringify({
+        //         'message': String(xx)
+        //     }));
+        //     messageInputDom.value = '';
+        // };
+
+
+
+
+        gameSocket.onmessage = function(e) {
+            const data = JSON.parse(e.data);
+            document.querySelector('#game-log').value += (data.message + '\n');
+        };
+
+        gameSocket.onclose = function(e) {
+            console.error('Game socket closed unexpectedly');
+        };
+
+        document.querySelector('#game-message-input').focus();
+        document.querySelector('#game-message-input').onkeyup = function(e) {
+            if (e.keyCode === 13) {  // enter, return
+                document.querySelector('#game-message-submit').click();
+            }
+        };
+
+        document.querySelector('#game-message-submit').onclick = function(e) {
+            const messageInputDom = document.querySelector('#game-message-input');
+            const message = messageInputDom.value;
+            gameSocket.send(JSON.stringify({
+                'message': message
+            }));
+            messageInputDom.value = '';
+        };
+    </script>
+</body>
+</html>

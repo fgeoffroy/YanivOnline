@@ -12,13 +12,16 @@ RUN update-alternatives --install /usr/bin/pip pip /usr/bin/pip3 3
 RUN pip install --upgrade pip
 RUN pip install django
 RUN pip install -U channels
+RUN apt-get -y install python3-dev
+RUN apt-get -y install default-libmysqlclient-dev
+RUN pip install mysqlclient
 
 RUN mkdir /var/www
-COPY yaniv /var/www/yaniv
+COPY simple_game /var/www/simple_game
 
-WORKDIR /var/www/yaniv
+WORKDIR /var/www/simple_game
 
 EXPOSE 8080
 
-ENTRYPOINT python manage.py runserver 0.0.0.0:8080
+#ENTRYPOINT python manage.py runserver 0.0.0.0:8080
 
