@@ -11,7 +11,7 @@ echo >> container_message
 echo >> container_message
 echo "Welcome to yaniv online testing instance" >> container_message
 echo >> container_message
-echo "Please connect to http://$(cat container_ip):8080 " >> container_message
+echo "Please connect to http://$(cat container_ip):8080/game " >> container_message
 echo >> container_message
 echo >> container_message
 echo "#######################################################" >> container_message

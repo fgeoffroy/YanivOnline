@@ -15,13 +15,11 @@ RUN pip install -U channels
 RUN apt-get -y install python3-dev
 RUN apt-get -y install default-libmysqlclient-dev
 RUN pip install mysqlclient
+RUN python -m pip install channels_redis
 
 RUN mkdir /var/www
-COPY simple_game /var/www/simple_game
+COPY yaniv /var/www/yaniv
 
-WORKDIR /var/www/simple_game
+WORKDIR /var/www/yaniv
 
 EXPOSE 8080
-
-#ENTRYPOINT python manage.py runserver 0.0.0.0:8080
-

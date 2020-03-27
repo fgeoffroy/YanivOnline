@@ -1,14 +1,9 @@
 from django.db import models
 
-# Create your models here.
+class Room(models.Model):
+    name = models.CharField(max_length=30)
+    nbUsers = models.IntegerField(default=0)
 
-
-class Game(models.Model):
-    gameID = models.IntegerField(max_length=100)
-
-    class Meta:
-        verbose_name = "game"
-        ordering = ['gameID']
-
-    def __str__(self):
-        return str(self.gameID)
+class User(models.Model):
+    name = models.CharField(max_length=30)
+    room = models.ForeignKey(Room, on_delete=models.CASCADE)
