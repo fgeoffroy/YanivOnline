@@ -6,3 +6,7 @@ from . import consumers
 websocket_urlpatterns = [
     re_path(r'ws/game/(?P<room_name>\w+)/$', consumers.GameConsumer),
 ]
+
+websocket_urlpatterns = [
+    re_path(r'ws/card/(?P<room_name>\w+)/$', consumers.CardConsumer),
+]

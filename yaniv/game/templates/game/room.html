@@ -19,18 +19,64 @@
     <script>
 
         const room_name = JSON.parse(document.getElementById('room-name').textContent);
-        const wsAdress = 'ws://'
+        const wsGameAdress = 'ws://'
                           + window.location.host
                           + '/ws/game/'
                           + room_name
                           + '/'
-        const gameSocket = new WebSocket(wsAdress);
+        const gameSocket = new WebSocket(wsGameAdress);
         var $container = document.getElementById('container');
 
+        const wsCardAdress = 'ws://'
+                          + window.location.host
+                          + '/ws/card/'
+                          + room_name
+                          + '/'
+
+        function Connector(wsurl) {
+            this.socket = new WebSocket(wsurl);
+        }
+        Connector.prototype.emit = function(msg) {
+            var self = this;
+            (function _waitForSocketConnection(callback) {
+                setTimeout(function() {
+                    if (self.socket.readyState === 1) {
+                        console.log("Connection is made")
+                        if (callback != null) {
+                            callback();
+                        }
+                        return;
+                    } else {
+                        console.log("wait for connection...")
+                        _waitForSocketConnection(callback);
+                    }
+                }, 5);
+            })(function() {
+                console.log("message sent!!!");
+                self.socket.send(JSON.stringify({
+                    'message': msg
+                }));
+            });
+        }
+        var con = new Connector(wsCardAdress);
+        con.emit('abc');
+
+
+
+        // gameSocket.onopen = function(e) {
+        //     gameSocket.send(JSON.stringify({
+        //         'message': 'aaaaaaaaaaaaaaa'
+        //     }));
+        // };
 
         // create Deck
-        var deck = Deck(true, gameSocket);
-        deck.mount($container);
+        var deck = Deck(true, con);
+        // deck.mount($container);
+        // sock.onopen = function(e) {
+        //     sock.send(JSON.stringify({
+        //         'message': 'aaaaaaaaaaaaaaa'
+        //     }));
+        // };
 
 
 
@@ -47,89 +93,18 @@
         //     card.setSide('front');
         // };
         //
-        // var card = deck.cards[0];
+        var card = deck.cards[0];
+        card.mount($container);
         // // // Allow to move/drag it
         // card.disableDragging();
-        // card.enableFlipping();
+        card.enableFlipping();
 
 
-
-
-        // var Button = function (id, value) {
-        //     this.id = id;
-        //     this.value = value;
-        //
-        //     this.draw = function () {
-        //         this.element = document.createElement("input");
-        //         this.element.type = "button";
-        //         this.element.id = id;
-        //         this.element.value = value;
-        //         document.getElementById("container").appendChild(this.element);
-        //     }
-        // };
-        //
-        // Button.prototype.addEventListener = function(event, handler){
-        //     var el = this.element;
-        //     if(!el){
-        //         throw 'Not yet rendered';
-        //     }
-        //     if (el.addEventListener){
-        //         el.addEventListener(event, handler, false);
-        //     } else if (el.attachEvent){
-        //         el.attachEvent('on' + event, handler);
-        //     }
-        // };
-        //
-        // var myButton = new Button('btn1', "Test Button");
-        // myButton.draw();
-        // myButton.addEventListener('click', function(){
-        //     alert('ok')
-        // });
-        //
-        //
-        //
-        //
-        // var Test = function (name) {
-        //     this.name = name;
-        // };
-        //
-        // Test.prototype.addEventListener = function(event, handler){
-        //     var el = this.element;
-        //     if(!el){
-        //         throw 'Not yet rendered';
-        //     }
-        //     if (el.addEventListener){
-        //         el.addEventListener(event, handler, false);
-        //     } else if (el.attachEvent){
-        //         el.attachEvent('on' + event, handler);
-        //     }
-        // };
-        //
-        // var myTest = new Test('test1');
-
-
-
-
-        // gameSocket.onopen = function(event) {
-        //   gameSocket.send(JSON.stringify({
-        //       'message': 'ws://'
-        //       + window.location.host
-        //       + '/ws/game/'
-        //       + room_name
-        //       + '/'
-        //   }));
-        // };
-
-        // document.querySelector('#game-message-submit').onclick = function(e) {
-        //     const messageInputDom = document.querySelector('#game-message-input');
-        //     const message = messageInputDom.value;
-        //     const xx = deck.cards[0].suit;
-        //     gameSocket.send(JSON.stringify({
-        //         'message': String(xx)
-        //     }));
-        //     messageInputDom.value = '';
-        // };
-
+        const cardSocket = new WebSocket(wsCardAdress)
+        cardSocket.onmessage = function(e) {
+            const data = JSON.parse(e.data);
+            document.querySelector('#game-log').value += ("A card has been flipped" + '\n');
+        };
 
 
 
