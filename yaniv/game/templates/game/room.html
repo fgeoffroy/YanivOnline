@@ -12,13 +12,18 @@
     <textarea id="game-log" cols="100" rows="20"></textarea><br>
     <input id="game-message-input" type="text" size="100"><br>
     <input id="game-message-submit" type="button" value="Send">
-    {{ room_name|json_script:"room-name" }}
+    <input id="game-quit-submit" type="button" value="Quit game">
+    {{ current_user.username|json_script:"user_name" }}
+    {{ room_name|json_script:"room_name" }}
+    <!-- {{ current_user.player.room.nb_users|json_script:"nb_users" }} -->
     <!-- <script src="https://deck-of-cards.js.org/dist/deck.min.js"></script> -->
     <script src="{% static 'game/deck-of-cards-master/dist/deck.js' %}"></script>
     <div id="container"></div>
     <script>
         const nb_users = 5;
-        const room_name = JSON.parse(document.getElementById('room-name').textContent);
+        const user_name = JSON.parse(document.getElementById('user_name').textContent);
+        const room_name = JSON.parse(document.getElementById('room_name').textContent);
+        // var nb_users = JSON.parse(document.getElementById('nb_users').textContent);
         var $container = document.getElementById('container');
 
         const wsGameAdress = 'ws://'
@@ -27,13 +32,6 @@
                           + room_name
                           + '/';
         const gameSocket = new WebSocket(wsGameAdress);
-
-        const wsCardAdress = 'ws://'
-                          + window.location.host
-                          + '/ws/card/'
-                          + room_name
-                          + '/';
-        const cardSocket = new WebSocket(wsCardAdress);
 
         function Connector(wsurl) {
             this.socket = new WebSocket(wsurl);
@@ -56,11 +54,11 @@
             })(function() {
                 // console.log("message sent!!!");
                 self.socket.send(JSON.stringify({
-                    'message': msg
+                    'card_msg': msg
                 }));
             });
         }
-        var con = new Connector(wsCardAdress);
+        var con = new Connector(wsGameAdress);
 
 
 
@@ -73,8 +71,6 @@
         // create Deck
         var deck = Deck(true, con);
         deck.mount($container);
-        // Remove the third joker
-        deck.cards[deck.cards.length - 1].unmount();
         // deck.shuffle();
         // deck.poker();
         // sock.onopen = function(e) {
@@ -108,7 +104,7 @@
 
         // deck.poker();
 
-        // var card = deck.cards[deck.cards.length - 1];
+        var card = deck.cards[deck.cards.length - 2];
         // card.mount($container);
         // // // // Allow to move/drag it
         // // card.disableDragging();
@@ -122,20 +118,55 @@
         //     x: ((1 + radius * Math.cos(3 * Math.PI / 2)) * window.innerWidth - window.innerWidth) / 2,
         //     y: ((1 - radius * Math.sin(3 * Math.PI / 2)) * window.innerHeight - window.innerHeight) / 2
         // });
-        // card.setSide('front');
-        // card.enableFlipping();
+        card.setSide('back');
+        card.enableFlipping();
 
 
-        cardSocket.onmessage = function(e) {
-            deck.flip();
-            document.querySelector('#game-log').value += ("The card has been flipped" + '\n');
-        };
+
+
+
+
+        // quitSocket.onmessage = function(e) {
+        //     nb_users--;
+        //     const data = JSON.parse(e.data);
+        //     document.querySelector('#game-log').value += (data.message + '\n');
+        //     // document.querySelector('#game-log').value += (toJson(' has left the game.') + '\n');
+        // };
+        //
+        // document.querySelector('#game-quit-submit').onclick = function(e) {
+        //     quitSocket.send(JSON.stringify({
+        //         'message': String(user_name)
+        //     }));
+        //     // quitSocket.close();
+        //     window.location.replace("/game/disconnect");
+        // };
+        //
+        //
+        //
+        //
+        //
+        //
+        // cardSocket.onmessage = function(e) {
+        //     deck.flip();
+        //     document.querySelector('#game-log').value += ('The card has been flipped.' + '\n');
+        // };
+
+
 
 
 
         gameSocket.onmessage = function(e) {
             const data = JSON.parse(e.data);
-            document.querySelector('#game-log').value += (data.message + '\n');
+            if (data.hasOwnProperty('chat_msg')) {
+                document.querySelector('#game-log').value += (data.chat_msg + '\n');
+            } else if (data.hasOwnProperty('quit_msg')) {
+                document.querySelector('#game-log').value += (data.quit_msg + ' has quit the game.' + '\n');
+            } else if (data.hasOwnProperty('card_msg')) {
+                deck.flip();
+                document.querySelector('#game-log').value += ('The card has been flipped.' + '\n');
+            } else {
+              // pass
+            }
         };
 
         gameSocket.onclose = function(e) {
@@ -149,11 +180,19 @@
             }
         };
 
+        document.querySelector('#game-quit-submit').onclick = function(e) {
+            gameSocket.send(JSON.stringify({
+                'quit_msg': String(user_name)
+            }));
+            // gameSocket.close();
+            // window.location.replace("/game/disconnect");
+        };
+
         document.querySelector('#game-message-submit').onclick = function(e) {
             const messageInputDom = document.querySelector('#game-message-input');
             const message = messageInputDom.value;
             gameSocket.send(JSON.stringify({
-                'message': message
+                'chat_msg': message
             }));
             messageInputDom.value = '';
         };

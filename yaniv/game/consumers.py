@@ -26,67 +26,62 @@ class GameConsumer(WebsocketConsumer):
     # Receive message from WebSocket
     def receive(self, text_data):
         text_data_json = json.loads(text_data)
-        message = text_data_json['message']
-
-        # Send message to room group
-        async_to_sync(self.channel_layer.group_send)(
-            self.room_group_name,
-            {
-                'type': 'game_message',
-                'message': message
-            }
-        )
+        if 'chat_msg' in text_data_json:
+            chat_msg = text_data_json['chat_msg']
+            # Send message to room group
+            async_to_sync(self.channel_layer.group_send)(
+                self.room_group_name,
+                {
+                    'type': 'chat_msg',
+                    'chat_msg': chat_msg
+                }
+            )
+        elif 'quit_msg' in text_data_json:
+            quit_msg = text_data_json['quit_msg']
+            # Send message to room group
+            async_to_sync(self.channel_layer.group_send)(
+                self.room_group_name,
+                {
+                    'type': 'quit_msg',
+                    'quit_msg': quit_msg
+                }
+            )
+        elif 'card_msg' in text_data_json:
+            card_msg = text_data_json['card_msg']
+            # Send message to room group
+            async_to_sync(self.channel_layer.group_send)(
+                self.room_group_name,
+                {
+                    'type': 'card_msg',
+                    'card_msg': card_msg
+                }
+            )
+        else:
+            pass
 
     # Receive message from room group
-    def game_message(self, event):
-        message = event['message']
+    def chat_msg(self, event):
+        chat_msg = event['chat_msg']
 
         # Send message to WebSocket
         self.send(text_data=json.dumps({
-            'message': message
+            'chat_msg': chat_msg
         }))
 
-
-
-class CardConsumer(WebsocketConsumer):
-    def connect(self):
-        self.room_name = self.scope['url_route']['kwargs']['room_name']
-        self.room_group_name = 'card_%s' % self.room_name
-
-        # Join room group
-        async_to_sync(self.channel_layer.group_add)(
-            self.room_group_name,
-            self.channel_name
-        )
-
-        self.accept()
-
-    def disconnect(self, close_code):
-        # Leave room group
-        async_to_sync(self.channel_layer.group_discard)(
-            self.room_group_name,
-            self.channel_name
-        )
-
-    # Receive message from WebSocket
-    def receive(self, text_data):
-        text_data_json = json.loads(text_data)
-        message = text_data_json['message']
-
-        # Send message to room group
-        async_to_sync(self.channel_layer.group_send)(
-            self.room_group_name,
-            {
-                'type': 'game_message',
-                'message': message
-            }
-        )
-
     # Receive message from room group
-    def game_message(self, event):
-        message = event['message']
+    def card_msg(self, event):
+        card_msg = event['card_msg']
 
         # Send message to WebSocket
         self.send(text_data=json.dumps({
-            'message': message
+            'card_msg': card_msg
+        }))
+
+    # Receive message from room group
+    def quit_msg(self, event):
+        quit_msg = event['quit_msg']
+
+        # Send message to WebSocket
+        self.send(text_data=json.dumps({
+            'quit_msg': quit_msg
         }))

@@ -1,4 +1,36 @@
-{% if conflictUser_Name %}This name is already used.{% endif %}
+{% if current_user.is_authenticated %}
+    <p>Authenticated {{ current_user }}</p>
+{% else %}
+    <p>Anonymous</p>
+{% endif %}
+
+<p>Users that are logged:</p>
+{% if users %}
+    <ul class="user-list">
+        {% for user in users %}
+            {% if user.is_authenticated %}
+                <li>{{ user }}</li>
+            {% endif %}
+        {% endfor %}
+    </ul>
+{% endif %}
+
+<p>Rooms:</p>
+{% if rooms %}
+    <ul class="user-list">
+        {% for room in rooms %}
+            <li>{{ room }}</li>
+        {% endfor %}
+    </ul>
+{% endif %}
+
+{% if conflict_user_name %}
+<p><strong>This name is already used.</strong></p>
+{% endif %}
+
+{% if conflict_nb_users %}
+<p><strong>This room is already full.</strong></p>
+{% endif %}
 
 <form action="{% url "view_matchmaking" %}" method="post" content='text/html; charset=UTF-8' accept-charset="UTF-8">
     {% csrf_token %}
