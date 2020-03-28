@@ -1,6 +1,6 @@
 {% if conflictUser_Name %}This name is already used.{% endif %}
 
-<form action="{% url "view_matchmaking" %}" method="post">
+<form action="{% url "view_matchmaking" %}" method="post" content='text/html; charset=UTF-8' accept-charset="UTF-8">
     {% csrf_token %}
     {{ form.as_p }}
     <input type="submit" value="Submit" />

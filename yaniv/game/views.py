@@ -11,7 +11,6 @@ def view_matchmaking(request):
         room_name = form.cleaned_data['room_name']
 
         if User.objects.filter(name=user_name, room__name=room_name):
-            print("aaaaaaaaaaaaaaa")
             conflictUser_name = True
             return render(request, 'game/matchmaking_form.html', locals())
 
