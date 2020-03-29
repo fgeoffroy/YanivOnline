@@ -6,7 +6,14 @@
     <meta charset="utf-8"/>
     <title>Room</title>
     <!-- <link rel="stylesheet" href="https://deck-of-cards.js.org/example.css"> -->
+    <script console.log({% static 'game'%})></script>
     <link rel="stylesheet" href="{% static 'game/deck-of-cards-master/example/example.css' %}">
+
+    <link rel="stylesheet" href="{% static 'game/jQuery-ToggleButton/toggle.button.css' %}">
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+    <script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.10.4/jquery-ui.min.js"></script>
+    <script src="{% static 'game/jQuery-ToggleButton/toggle.button.js' %}"></script>
 </head>
 <body>
     <textarea id="game-log" cols="100" rows="20"></textarea><br>
@@ -15,15 +22,33 @@
     <input id="game-quit-submit" type="button" value="Quit game">
     {{ current_user.username|json_script:"user_name" }}
     {{ room_name|json_script:"room_name" }}
-    <!-- {{ current_user.player.room.nb_users|json_script:"nb_users" }} -->
-    <!-- <script src="https://deck-of-cards.js.org/dist/deck.min.js"></script> -->
-    <script src="{% static 'game/deck-of-cards-master/dist/deck.js' %}"></script>
-    <div id="container"></div>
+
+
+
+    <input type="checkbox" id="toggle-button" unchecked>
     <script>
-        const nb_users = 5;
+  			$("#toggle-button").toggleButton({
+        text : "Ready",
+        toggleOnColor : "green",
+        onTitle : "On",
+        offTitle : "Off",
+        onImg: "{% static 'game/jQuery-ToggleButton/toggleON.png' %}",
+        offImg: "{% static 'game/jQuery-ToggleButton/toggleOFF.png' %}",
+        change : null
+        });
+		</script>
+
+
+
+    <!-- <script src="https://deck-of-cards.js.org/dist/deck.min.js"></script> -->
+    <script src="{% static 'game/deck-of-cards-master/dist/deck.js' %}">console.firebug=true;</script>
+    <div id="container"></div>
+
+    <script>
         const user_name = JSON.parse(document.getElementById('user_name').textContent);
         const room_name = JSON.parse(document.getElementById('room_name').textContent);
-        // var nb_users = JSON.parse(document.getElementById('nb_users').textContent);
+        // var nb_users = {{ current_user.player.room.nb_users }}
+        var nb_users = 3
         var $container = document.getElementById('container');
 
         const wsGameAdress = 'ws://'
@@ -159,11 +184,23 @@
             const data = JSON.parse(e.data);
             if (data.hasOwnProperty('chat_msg')) {
                 document.querySelector('#game-log').value += (data.chat_msg + '\n');
-            } else if (data.hasOwnProperty('quit_msg')) {
-                document.querySelector('#game-log').value += (data.quit_msg + ' has quit the game.' + '\n');
+            // } else if (data.hasOwnProperty('ready_msg')) {
+            //     if (user_name == data.quit_msg) {
+            //       gameSocket.close();
+            //       window.location.replace("/game/disconnect");
+            //     }
+            //     nb_users--;
+            //     document.querySelector('#game-log').value += (data.quit_msg + ' has quit the game.' + '\n');
             } else if (data.hasOwnProperty('card_msg')) {
                 deck.flip();
                 document.querySelector('#game-log').value += ('The card has been flipped.' + '\n');
+            } else if (data.hasOwnProperty('quit_msg')) {
+                if (user_name == data.quit_msg) {
+                  gameSocket.close();
+                  window.location.replace("/game/disconnect");
+                }
+                nb_users--;
+                document.querySelector('#game-log').value += (data.quit_msg + ' has quit the game.' + '\n');
             } else {
               // pass
             }
@@ -173,19 +210,23 @@
             console.error('Game socket closed unexpectedly');
         };
 
-        document.querySelector('#game-message-input').focus();
-        document.querySelector('#game-message-input').onkeyup = function(e) {
-            if (e.keyCode === 13) {  // enter, return
-                document.querySelector('#game-message-submit').click();
-            }
-        };
+        // document.querySelector('#game-ready-submit').onclick = function(e) {
+        //     gameSocket.send(JSON.stringify({
+        //         'ready_msg': String(user_name)
+        //     }));
+        // };
 
         document.querySelector('#game-quit-submit').onclick = function(e) {
             gameSocket.send(JSON.stringify({
                 'quit_msg': String(user_name)
             }));
-            // gameSocket.close();
-            // window.location.replace("/game/disconnect");
+        };
+
+        document.querySelector('#game-message-input').focus();
+        document.querySelector('#game-message-input').onkeyup = function(e) {
+            if (e.keyCode === 13) {  // enter, return
+                document.querySelector('#game-message-submit').click();
+            }
         };
 
         document.querySelector('#game-message-submit').onclick = function(e) {

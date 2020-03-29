@@ -4,6 +4,8 @@ django:
   links:
     - mysql:mysql
     - redis:redis
+  environment:
+    - PYTHONUNBUFFERED=1
 mysql:
   image: mysql:5.7
   environment:

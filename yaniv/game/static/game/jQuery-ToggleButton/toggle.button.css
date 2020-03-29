@@ -1,0 +1,41 @@
+.toggleButton {
+background-image: url('textures/highlight.png');
+background-image: none, -webkit-linear-gradient(top, #f6f6f6 0, #eaeaea 100%);
+background-image: none, -moz-linear-gradient(top, #f6f6f6 0, #eaeaea 100%);
+background-image: none, -o-linear-gradient(top, #f6f6f6 0, #eaeaea 100%);
+background-image: none, linear-gradient(to bottom, #f6f6f6 0, #eaeaea 100%);
+background-position: 50% 50%;
+background-color: #e3e3e3;
+border: solid 1px lightgrey;
+border-radius: 5px;
+-webkit-border-radius: 5px;
+-moz-border-radius: 5px;
+cursor: pointer;
+padding: 5px 10px;
+display: inline-block;
+margin: 0;
+font-family: inherit;
+line-height: 1.66em;
+text-align: center;
+cursor: pointer;
+text-decoration: none;
+-webkit-box-sizing: border-box;
+-moz-box-sizing: border-box;
+box-sizing: border-box;
+}
+.toggle-img {
+background-position: center;
+display: inline-block;
+float: left;
+width: 16px;
+height: 16px;
+margin-top: 6px;
+margin-right: 5px;
+overflow: hidden;
+background-repeat: no-repeat;
+font-size: 0;
+line-height: 0;
+text-indent: -3333px;
+text-align: center;
+vertical-align: middle;
+}

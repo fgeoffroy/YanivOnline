@@ -36,14 +36,14 @@ class GameConsumer(WebsocketConsumer):
                     'chat_msg': chat_msg
                 }
             )
-        elif 'quit_msg' in text_data_json:
-            quit_msg = text_data_json['quit_msg']
+        elif 'ready_msg' in text_data_json:
+            ready_msg = text_data_json['ready_msg']
             # Send message to room group
             async_to_sync(self.channel_layer.group_send)(
                 self.room_group_name,
                 {
-                    'type': 'quit_msg',
-                    'quit_msg': quit_msg
+                    'type': 'ready_msg',
+                    'ready_msg': ready_msg
                 }
             )
         elif 'card_msg' in text_data_json:
@@ -56,6 +56,16 @@ class GameConsumer(WebsocketConsumer):
                     'card_msg': card_msg
                 }
             )
+        elif 'quit_msg' in text_data_json:
+            quit_msg = text_data_json['quit_msg']
+            # Send message to room group
+            async_to_sync(self.channel_layer.group_send)(
+                self.room_group_name,
+                {
+                    'type': 'quit_msg',
+                    'quit_msg': quit_msg
+                }
+            )
         else:
             pass
 
@@ -66,6 +76,15 @@ class GameConsumer(WebsocketConsumer):
         # Send message to WebSocket
         self.send(text_data=json.dumps({
             'chat_msg': chat_msg
+        }))
+
+    # Receive message from room group
+    def ready_msg(self, event):
+        ready_msg = event['ready_msg']
+
+        # Send message to WebSocket
+        self.send(text_data=json.dumps({
+            'ready_msg': ready_msg
         }))
 
     # Receive message from room group

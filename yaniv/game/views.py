@@ -59,5 +59,6 @@ def view_room(request, room_name):
 
 def view_disconnect(request):
     current_user = request.user
+    # xx UPDATE THE STATE OF THE ROOM ?
     current_user.delete()
     return redirect(view_matchmaking)
