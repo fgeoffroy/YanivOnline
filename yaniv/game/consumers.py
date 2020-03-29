@@ -1,4 +1,5 @@
 # game/consumers.py
+from random import shuffle
 import json
 from asgiref.sync import async_to_sync
 from channels.generic.websocket import WebsocketConsumer
@@ -38,20 +39,28 @@ class GameConsumer(WebsocketConsumer):
                     player.ready = True
                     player.save()
                     room = Room.objects.filter(name=self.room_name).first()
-                    if room.nb_users > 1:
+                    nb_users = room.nb_users
+                    if nb_users > 1:
                         players = Player.objects.filter(room__name=self.room_name)
                         all_ready = True
                         for player in players:
                             if not player.ready:
                                 all_ready = False
                         if all_ready:
+                            # Randomize order
+                            dict = {}
+                            players = list(players)
+                            shuffle(players)
+                            for i, player in enumerate(players):
+                                dict[player.user.username] = i
                             # Send message to room group
                             async_to_sync(self.channel_layer.group_send)(
                                 self.room_group_name,
                                 {
-                                    'type': 'game_msg',
+                                    'type': 'ready_msg',
                                     'type_msg': type_msg,
-                                    'message': "go"
+                                    'nb_users': str(nb_users),
+                                    'users_order': dict
                                 }
                             )
                 else:
@@ -78,3 +87,12 @@ class GameConsumer(WebsocketConsumer):
         self.send(text_data=json.dumps({
             type_msg: msg
         }))
+
+    # Receive message from room group
+    def ready_msg(self, event):
+        type_msg = event['type_msg']
+        msg = event['nb_users']
+        dict = { type_msg: msg }
+        dict['users_order'] = event['users_order']
+        # Send message to WebSocket
+        self.send(text_data=json.dumps(dict))

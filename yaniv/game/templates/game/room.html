@@ -48,7 +48,8 @@
         const user_name = JSON.parse(document.getElementById('user_name').textContent);
         const room_name = JSON.parse(document.getElementById('room_name').textContent);
         // var nb_users = {{ current_user.player.room.nb_users }}
-        var nb_users = 3
+        var nb_users = 3;
+        var started = false;
 
         const wsGameAdress = 'ws://'
                           + window.location.host
@@ -86,96 +87,71 @@
 
 
 
-        // gameSocket.onopen = function(e) {
-        //     gameSocket.send(JSON.stringify({
-        //         'message': 'aaaaaaaaaaaaaaa'
-        //     }));
-        // };
+
+
 
         // create Deck
         var deck = Deck(true, con);
         var $container = document.getElementById('container');
-        deck.mount($container);
-        // deck.shuffle();
-        // deck.poker();
-        // sock.onopen = function(e) {
-        //     sock.send(JSON.stringify({
-        //         'message': 'aaaaaaaaaaaaaaa'
-        //     }));
-        // };
-
+        var hands = [];
+        for (const i of Array(nb_users).keys()) {
+            hands[i] = [];
+        }
         const radius = 0.5;
+        var angular_positions = [];
         var angle = 3 * Math.PI / 2;
-        var count = 1;
-        var gap = 0;
-        for (const i of Array(5).keys()) {
-            angle = 3 * Math.PI / 2;
-            for (const j of Array(nb_users).keys()) {
-                var card = deck.cards[deck.cards.length - count];
-                card.animateTo({
-                    delay: 1000 + count * 100, // wait 1 second + count * 2 ms
-                    duration: 500,
-                    ease: 'quartOut',
+        for (const j of Array(nb_users).keys()) {
+            angular_positions[j] = angle;
+            angle += 2 * Math.PI / nb_users;
+        }
+        start_game();
 
-                    x: ((1 + radius * Math.cos(angle) + gap) * window.innerWidth - window.innerWidth) / 2,
-                    y: ((1 - radius * Math.sin(angle)) * window.innerHeight - window.innerHeight) / 2
-                });
-                card.setSide('front');
-                count++;
-                angle += 2 * Math.PI / nb_users;
+
+
+        function start_game() {
+            deck.mount($container);
+            var count = 1;
+            var gap = 0;
+            for (const i of Array(5).keys()) {
+                for (const j of Array(nb_users).keys()) {
+                    deal_card(deck.cards.length - count, j, count, gap)
+                    count++;
+                };
+                gap += 0.05;
             };
-            gap += 0.05;
-        };
-
-        // deck.poker();
-
-        var card = deck.cards[deck.cards.length - 2];
-        // card.mount($container);
-        // // // // Allow to move/drag it
-        // // card.disableDragging();
-        // // card.enableFlipping();
-        // const radius = 0.5;
-        // card.animateTo({
-        //     delay: 1000 + 0 * 2, // wait 1 second + i * 2 ms
-        //     duration: 500,
-        //     ease: 'quartOut',
-        //
-        //     x: ((1 + radius * Math.cos(3 * Math.PI / 2)) * window.innerWidth - window.innerWidth) / 2,
-        //     y: ((1 - radius * Math.sin(3 * Math.PI / 2)) * window.innerHeight - window.innerHeight) / 2
-        // });
-        card.setSide('back');
-        card.enableFlipping();
+        }
 
 
 
+        function deal_card(i, j, delay_index, gap) {
+            var card = deck.cards[i];
+            // var hand_size = hands[j].length;
+            // card.unmount();
+            hands[j].push(card);
+            // card.setSide('front');
+            // sort_hand(j);
+            card.animateTo({
+                delay: 1000 + delay_index * 100, // wait 1 second + count * 2 ms
+                duration: 500,
+                ease: 'quartOut',
 
+                x: ((1 + radius * Math.cos(angular_positions[j]) + gap) * window.innerWidth - window.innerWidth) / 2,
+                y: ((1 - radius * Math.sin(angular_positions[j])) * window.innerHeight - window.innerHeight) / 2
+            });
+            // card.setSide('front');
+        }
 
+        // setTimeout(function(){
+        //     deck.sort();
+        // }, 5000);
 
-        // quitSocket.onmessage = function(e) {
-        //     nb_users--;
-        //     const data = JSON.parse(e.data);
-        //     document.querySelector('#game-log').value += (data.message + '\n');
-        //     // document.querySelector('#game-log').value += (toJson(' has left the game.') + '\n');
-        // };
-        //
-        // document.querySelector('#game-quit-submit').onclick = function(e) {
-        //     quitSocket.send(JSON.stringify({
-        //         'message': String(user_name)
-        //     }));
-        //     // quitSocket.close();
-        //     window.location.replace("/game/disconnect");
-        // };
-        //
-        //
-        //
-        //
-        //
-        //
-        // cardSocket.onmessage = function(e) {
-        //     deck.flip();
-        //     document.querySelector('#game-log').value += ('The card has been flipped.' + '\n');
-        // };
-
+        // Rank : from 1 to 13 (10 + face cards)
+        // Suits :
+        // 0 : spades
+        // 1 : hearts
+        // 2 : clubs
+        // 3 : diamonds
+        // 4 : jokers (which also have a rank)
 
 
 
@@ -185,7 +161,13 @@
             if (data.hasOwnProperty('chat_msg')) {
                 document.querySelector('#game-log').value += (data.chat_msg + '\n');
             } else if (data.hasOwnProperty('ready_msg')) {
-                document.querySelector('#game-log').value += (data.ready_msg + '\n');
+                document.querySelector('#game-log').value += ("Go!" + '\n');
+                document.querySelector('#game-ready-submit').disabled = true;
+                started = true;
+                nb_users = parseInt(data.ready_msg);
+                console.log(data.users_order);
+                console.log(typeof data.users_order);
+                start_game();
             } else if (data.hasOwnProperty('card_msg')) {
                 deck.flip();
                 document.querySelector('#game-log').value += ('The card has been flipped.' + '\n');
