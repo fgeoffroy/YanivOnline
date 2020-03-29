@@ -13,6 +13,7 @@ class Room(models.Model):
 class Player(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     room = models.ForeignKey(Room, on_delete=models.CASCADE)
+    ready = models.BooleanField(default=False)
 
     def __str__(self):
         return self.user.username

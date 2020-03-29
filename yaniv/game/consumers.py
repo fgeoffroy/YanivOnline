@@ -2,6 +2,8 @@
 import json
 from asgiref.sync import async_to_sync
 from channels.generic.websocket import WebsocketConsumer
+from .models import Player, Room
+
 
 class GameConsumer(WebsocketConsumer):
     def connect(self):
@@ -26,23 +28,52 @@ class GameConsumer(WebsocketConsumer):
     # Receive message from WebSocket
     def receive(self, text_data):
         text_data_json = json.loads(text_data)
-        type_msg = next(iter(text_data_json))
+        type_msg = str(next(iter(text_data_json)))
         msg = next(iter(text_data_json.values()))
-        # Send message to room group
-        async_to_sync(self.channel_layer.group_send)(
-            self.room_group_name,
-            {
-                'type': 'game_msg',
-                'type_msg': type_msg,
-                'message': msg
-            }
-        )
+
+        if "ready" in type_msg:
+            player = Player.objects.filter(user__username=msg).first()
+            if player:
+                if type_msg == "ready_msg":
+                    player.ready = True
+                    player.save()
+                    room = Room.objects.filter(name=self.room_name).first()
+                    if room.nb_users > 1:
+                        players = Player.objects.filter(room__name=self.room_name)
+                        all_ready = True
+                        for player in players:
+                            if not player.ready:
+                                all_ready = False
+                        if all_ready:
+                            # Send message to room group
+                            async_to_sync(self.channel_layer.group_send)(
+                                self.room_group_name,
+                                {
+                                    'type': 'game_msg',
+                                    'type_msg': type_msg,
+                                    'message': "go"
+                                }
+                            )
+                else:
+                    player.ready = False
+                    player.save()
+        else:
+            # Send message to room group
+            async_to_sync(self.channel_layer.group_send)(
+                self.room_group_name,
+                {
+                    'type': 'game_msg',
+                    'type_msg': type_msg,
+                    'message': msg
+                }
+            )
 
 
     # Receive message from room group
     def game_msg(self, event):
         type_msg = event['type_msg']
         msg = event['message']
+
         # Send message to WebSocket
         self.send(text_data=json.dumps({
             type_msg: msg

@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect
 from .forms import MatchmakingForm
-from .models import Room, Player
+from .models import Player, Room
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login, logout
 

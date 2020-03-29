@@ -25,9 +25,9 @@
 
 
 
-    <input type="checkbox" id="toggle-button" unchecked>
+    <input type="checkbox" id="game-ready-submit" unchecked>
     <script>
-  			$("#toggle-button").toggleButton({
+  			$("#game-ready-submit").toggleButton({
         text : "Ready",
         toggleOnColor : "green",
         onTitle : "On",
@@ -49,7 +49,6 @@
         const room_name = JSON.parse(document.getElementById('room_name').textContent);
         // var nb_users = {{ current_user.player.room.nb_users }}
         var nb_users = 3
-        var $container = document.getElementById('container');
 
         const wsGameAdress = 'ws://'
                           + window.location.host
@@ -95,6 +94,7 @@
 
         // create Deck
         var deck = Deck(true, con);
+        var $container = document.getElementById('container');
         deck.mount($container);
         // deck.shuffle();
         // deck.poker();
@@ -184,13 +184,8 @@
             const data = JSON.parse(e.data);
             if (data.hasOwnProperty('chat_msg')) {
                 document.querySelector('#game-log').value += (data.chat_msg + '\n');
-            // } else if (data.hasOwnProperty('ready_msg')) {
-            //     if (user_name == data.quit_msg) {
-            //       gameSocket.close();
-            //       window.location.replace("/game/disconnect");
-            //     }
-            //     nb_users--;
-            //     document.querySelector('#game-log').value += (data.quit_msg + ' has quit the game.' + '\n');
+            } else if (data.hasOwnProperty('ready_msg')) {
+                document.querySelector('#game-log').value += (data.ready_msg + '\n');
             } else if (data.hasOwnProperty('card_msg')) {
                 deck.flip();
                 document.querySelector('#game-log').value += ('The card has been flipped.' + '\n');
@@ -210,15 +205,23 @@
             console.error('Game socket closed unexpectedly');
         };
 
-        // document.querySelector('#game-ready-submit').onclick = function(e) {
-        //     gameSocket.send(JSON.stringify({
-        //         'ready_msg': String(user_name)
-        //     }));
-        // };
+        document.querySelector('#game-ready-submit').onclick = function(e) {
+            const checkedInputDom = document.querySelector('#game-ready-submit');
+            const checked = checkedInputDom.checked;
+            if (checked) {
+                gameSocket.send(JSON.stringify({
+                    "ready_msg": user_name
+                }));
+            } else {
+                gameSocket.send(JSON.stringify({
+                    "not_ready_msg": user_name
+                }));
+            }
+        };
 
         document.querySelector('#game-quit-submit').onclick = function(e) {
             gameSocket.send(JSON.stringify({
-                'quit_msg': String(user_name)
+                'quit_msg': user_name
             }));
         };
 
