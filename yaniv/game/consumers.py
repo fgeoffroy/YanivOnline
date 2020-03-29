@@ -26,81 +26,24 @@ class GameConsumer(WebsocketConsumer):
     # Receive message from WebSocket
     def receive(self, text_data):
         text_data_json = json.loads(text_data)
-        if 'chat_msg' in text_data_json:
-            chat_msg = text_data_json['chat_msg']
-            # Send message to room group
-            async_to_sync(self.channel_layer.group_send)(
-                self.room_group_name,
-                {
-                    'type': 'chat_msg',
-                    'chat_msg': chat_msg
-                }
-            )
-        elif 'ready_msg' in text_data_json:
-            ready_msg = text_data_json['ready_msg']
-            # Send message to room group
-            async_to_sync(self.channel_layer.group_send)(
-                self.room_group_name,
-                {
-                    'type': 'ready_msg',
-                    'ready_msg': ready_msg
-                }
-            )
-        elif 'card_msg' in text_data_json:
-            card_msg = text_data_json['card_msg']
-            # Send message to room group
-            async_to_sync(self.channel_layer.group_send)(
-                self.room_group_name,
-                {
-                    'type': 'card_msg',
-                    'card_msg': card_msg
-                }
-            )
-        elif 'quit_msg' in text_data_json:
-            quit_msg = text_data_json['quit_msg']
-            # Send message to room group
-            async_to_sync(self.channel_layer.group_send)(
-                self.room_group_name,
-                {
-                    'type': 'quit_msg',
-                    'quit_msg': quit_msg
-                }
-            )
-        else:
-            pass
+        type_msg = next(iter(text_data_json))
+        msg = next(iter(text_data_json.values()))
+        # Send message to room group
+        async_to_sync(self.channel_layer.group_send)(
+            self.room_group_name,
+            {
+                'type': 'game_msg',
+                'type_msg': type_msg,
+                'message': msg
+            }
+        )
+
 
     # Receive message from room group
-    def chat_msg(self, event):
-        chat_msg = event['chat_msg']
-
+    def game_msg(self, event):
+        type_msg = event['type_msg']
+        msg = event['message']
         # Send message to WebSocket
         self.send(text_data=json.dumps({
-            'chat_msg': chat_msg
-        }))
-
-    # Receive message from room group
-    def ready_msg(self, event):
-        ready_msg = event['ready_msg']
-
-        # Send message to WebSocket
-        self.send(text_data=json.dumps({
-            'ready_msg': ready_msg
-        }))
-
-    # Receive message from room group
-    def card_msg(self, event):
-        card_msg = event['card_msg']
-
-        # Send message to WebSocket
-        self.send(text_data=json.dumps({
-            'card_msg': card_msg
-        }))
-
-    # Receive message from room group
-    def quit_msg(self, event):
-        quit_msg = event['quit_msg']
-
-        # Send message to WebSocket
-        self.send(text_data=json.dumps({
-            'quit_msg': quit_msg
+            type_msg: msg
         }))
