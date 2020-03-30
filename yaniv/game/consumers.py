@@ -31,7 +31,15 @@ class GameConsumer(WebsocketConsumer):
                 room.delete()
             else:
                 room.nb_users -= 1
+
+
         # Send message to room group
+        players = Player.objects.filter(room__name=self.room_name)
+        if players:
+            users_list = []
+            for player in players:
+                users_list.append(player.user.username)
+            msg = users_list
         async_to_sync(self.channel_layer.group_send)(
             self.room_group_name,
             {

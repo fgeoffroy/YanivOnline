@@ -9,7 +9,7 @@ def view_matchmaking(request):
     logout(request);
     rooms = Room.objects.all()
     for room in rooms:
-        if room.nb_users <= 1:
+        if room.nb_users < 1:
             room.delete()
 
     form = MatchmakingForm(request.POST or None)
@@ -49,6 +49,7 @@ def view_matchmaking(request):
         user = authenticate(username=user_name, password=password)
         login(request, user)
         request.session['form_just_completed'] = True
+        request.session['user_name'] = user_name
         return redirect(view_room, room_name=room_name)
         # return render(request, 'game/room.html', locals())
 
@@ -60,6 +61,7 @@ def view_room(request, room_name):
     current_user = request.user
     if current_user.is_authenticated and current_user.player.room.name == room_name and request.session.get('form_just_completed'):
         request.session['form_just_completed'] = False
+        user_name = request.session['user_name']
         return render(request, 'game/room.html', locals())
     else:
         return redirect(view_matchmaking)

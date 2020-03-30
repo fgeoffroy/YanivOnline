@@ -51,8 +51,11 @@
         const room_name = JSON.parse(document.getElementById('room_name').textContent);
         // var nb_users = {{ current_user.player.room.nb_users }}
         var players = [];
+        var my_index;
         var nb_users;
         var started = false;
+        var gap = 0.1;
+
 
         const wsGameAdress = 'ws://'
                           + window.location.host
@@ -102,52 +105,101 @@
         var deck = Deck(true, con);
         var $container = document.getElementById('container');
         var hands = [];
-        for (const i of Array(nb_users).keys()) {
-            hands[i] = [];
-        }
         const radius = 0.5;
         var angular_positions = [];
-        var angle = 3 * Math.PI / 2;
-        for (const j of Array(nb_users).keys()) {
-            angular_positions[j] = angle;
-            angle += 2 * Math.PI / nb_users;
-        }
-        // start_game();
+
+
+        // XX TEMPORARY, JUST FOR TESTING PURPOSES
+        nb_users = 5;
+        players = ["Player 1", "Player 2", "Player 3"]
+        my_index = 1;
+        start_game();
 
 
 
         function start_game() {
             deck.mount($container);
+            deck.shuffle();
+            // console.log(deck.cards[3].$el.clientHeight);
+            // console.log(deck.cards[3].$el.clientWidth);
+            for (const i of Array(nb_users).keys()) {
+                hands[i] = [];
+            }
+            var angle = 3 * Math.PI / 2;
+            for (const j of Array(nb_users).keys()) {
+                angular_positions[j] = angle;
+                angle += 2 * Math.PI / nb_users;
+            }
             var count = 1;
-            var gap = 0;
             for (const i of Array(5).keys()) {
                 for (const j of Array(nb_users).keys()) {
-                    deal_card(deck.cards.length - count, j, count, gap)
+                    deal_card(deck.cards.length - count, j, count)
                     count++;
                 };
-                gap += 0.05;
+                // gap += 0.05;
             };
         }
 
 
 
-        function deal_card(i, j, delay_index, gap) {
+        function deal_card(i, j, delay_index) {
             var card = deck.cards[i];
-            // var hand_size = hands[j].length;
-            // card.unmount();
-            hands[j].push(card);
-            // card.setSide('front');
-            // sort_hand(j);
-            card.animateTo({
-                delay: 1000 + delay_index * 100, // wait 1 second + count * 2 ms
-                duration: 500,
-                ease: 'quartOut',
+            var hand = hands[j];
+            hand.push(card);
+            hand = bubble_sort_hand(hand);
+            card.setSide('front');
+            hand.forEach(function (c, ind) {
+                c.animateTo({
+                    delay: 1000 + delay_index * 100, // wait 1 second + count * 2 ms
+                    duration: 500,
+                    ease: 'quartOut',
 
-                x: ((1 + radius * Math.cos(angular_positions[j]) + gap) * window.innerWidth - window.innerWidth) / 2,
-                y: ((1 - radius * Math.sin(angular_positions[j])) * window.innerHeight - window.innerHeight) / 2
+                    x: ((1 + radius * Math.cos(angular_positions[j]) + gap * (ind - 2)) * window.innerWidth - window.innerWidth) / 2,
+                    y: ((1 - radius * Math.sin(angular_positions[j])) * window.innerHeight - window.innerHeight) / 2
+                });
             });
+
             // card.setSide('front');
         }
+
+
+        function bubble_sort_hand(arr){
+          var len = arr.length;
+           for (var i = len-1; i>=0; i--){
+             for(var j = 1; j<=i; j++){
+               if(is_card_sup(arr, j-1, j)){
+                   var temp = arr[j-1];
+                   arr[j-1] = arr[j];
+                   arr[j] = temp;
+                }
+             }
+           }
+           return arr;
+        }
+
+
+
+        function is_card_sup(arr, i, j){
+            // xx
+            if (arr[i].suit == 4) {
+                if (arr[j].suit == 4) {
+                    return arr[i].rank > arr[j].rank;
+                } else {
+                    return false;
+                }
+            } else {
+                if (arr[j].suit == 4) {
+                    return true;
+                } else {
+                    if (arr[i].rank == arr[j].rank) {
+                        return arr[i].suit > arr[j].suit;
+                    } else {
+                        return arr[i].rank > arr[j].rank;
+                    }
+                }
+            }
+        }
+
 
         // setTimeout(function(){
         //     deck.sort();
@@ -186,7 +238,8 @@
                 deck.flip();
                 document.querySelector('#game-log').value += ('The card has been flipped.' + '\n');
             } else if (data.hasOwnProperty('disconnect_msg')) {
-                nb_users--;
+                // XX TO DO, UPDATE GAME without this player
+                // nb_users--;
                 document.querySelector('#game-log').value += (data.disconnect_msg + ' has quit the game.' + '\n');
             } else {
               // pass
@@ -240,6 +293,7 @@
                 window.location.reload();
             }
         });
+
 
     </script>
 
