@@ -8,6 +8,7 @@ from .models import Player, Room
 
 class GameConsumer(WebsocketConsumer):
     def connect(self):
+        self.user = self.scope["user"]
         self.room_name = self.scope['url_route']['kwargs']['room_name']
         self.room_group_name = 'game_%s' % self.room_name
 
@@ -20,6 +21,25 @@ class GameConsumer(WebsocketConsumer):
         self.accept()
 
     def disconnect(self, close_code):
+        user = self.user
+        user_name = user.username
+        room = Room.objects.filter(name=self.room_name).first()
+        user.delete()
+        room = Room.objects.filter(name=self.room_name).first()
+        if room:
+            if room.nb_users <= 1:
+                room.delete()
+            else:
+                room.nb_users -= 1
+        # Send message to room group
+        async_to_sync(self.channel_layer.group_send)(
+            self.room_group_name,
+            {
+                'type': 'game_msg',
+                'type_msg': 'disconnect_msg',
+                'message': user_name
+            }
+        )
         # Leave room group
         async_to_sync(self.channel_layer.group_discard)(
             self.room_group_name,
@@ -40,7 +60,8 @@ class GameConsumer(WebsocketConsumer):
                     player.save()
                     room = Room.objects.filter(name=self.room_name).first()
                     nb_users = room.nb_users
-                    if nb_users > 1:
+                    if nb_users >= 1:   # XX ATTENTION REMMETTRE >
+                    # if nb_users > 1:
                         players = Player.objects.filter(room__name=self.room_name)
                         all_ready = True
                         for player in players:
@@ -48,25 +69,42 @@ class GameConsumer(WebsocketConsumer):
                                 all_ready = False
                         if all_ready:
                             # Randomize order
-                            dict = {}
+                            users_order = []
                             players = list(players)
                             shuffle(players)
-                            for i, player in enumerate(players):
-                                dict[player.user.username] = i
+                            for player in players:
+                                users_order.append(player.user.username)
                             # Send message to room group
                             async_to_sync(self.channel_layer.group_send)(
                                 self.room_group_name,
                                 {
-                                    'type': 'ready_msg',
+                                    'type': 'game_msg',
                                     'type_msg': type_msg,
-                                    'nb_users': str(nb_users),
-                                    'users_order': dict
+                                    'message': users_order
                                 }
                             )
                 else:
                     player.ready = False
                     player.save()
+
         else:
+
+            if type_msg == "connect_msg":
+                players = Player.objects.filter(room__name=self.room_name)
+                if players:
+                    users_list = []
+                    for player in players:
+                        users_list.append(player.user.username)
+                    msg = users_list
+
+            # if type_msg == "quit_msg":
+            #     print("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+            #     print(msg)
+                # player = Player.objects.filter(user__username=msg).first()
+                # if player:
+                #     player.delete()
+
+
             # Send message to room group
             async_to_sync(self.channel_layer.group_send)(
                 self.room_group_name,
@@ -89,10 +127,10 @@ class GameConsumer(WebsocketConsumer):
         }))
 
     # Receive message from room group
-    def ready_msg(self, event):
-        type_msg = event['type_msg']
-        msg = event['nb_users']
-        dict = { type_msg: msg }
-        dict['users_order'] = event['users_order']
-        # Send message to WebSocket
-        self.send(text_data=json.dumps(dict))
+    # def ready_msg(self, event):
+    #     type_msg = event['type_msg']
+    #     msg = event['nb_users']
+    #     dict = { type_msg: msg }
+    #     dict['users_order'] = event['users_order']
+    #     # Send message to WebSocket
+    #     self.send(text_data=json.dumps(dict))

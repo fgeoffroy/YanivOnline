@@ -6,9 +6,7 @@
     <meta charset="utf-8"/>
     <title>Room</title>
     <!-- <link rel="stylesheet" href="https://deck-of-cards.js.org/example.css"> -->
-    <script console.log({% static 'game'%})></script>
     <link rel="stylesheet" href="{% static 'game/deck-of-cards-master/example/example.css' %}">
-
     <link rel="stylesheet" href="{% static 'game/jQuery-ToggleButton/toggle.button.css' %}">
     <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
     <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
@@ -16,10 +14,14 @@
     <script src="{% static 'game/jQuery-ToggleButton/toggle.button.js' %}"></script>
 </head>
 <body>
+    <!-- <textarea id="game-players" cols="20" rows="10"></textarea><br> -->
+    <p>Room: {{ room_name }}</p>
+    <p>Players:</p>
+    <ul id="game-players"></ul>
     <textarea id="game-log" cols="100" rows="20"></textarea><br>
     <input id="game-message-input" type="text" size="100"><br>
     <input id="game-message-submit" type="button" value="Send">
-    <input id="game-quit-submit" type="button" value="Quit game">
+    <!-- <input id="game-quit-submit" type="button" value="Quit game"> -->
     {{ current_user.username|json_script:"user_name" }}
     {{ room_name|json_script:"room_name" }}
 
@@ -48,7 +50,8 @@
         const user_name = JSON.parse(document.getElementById('user_name').textContent);
         const room_name = JSON.parse(document.getElementById('room_name').textContent);
         // var nb_users = {{ current_user.player.room.nb_users }}
-        var nb_users = 3;
+        var players = [];
+        var nb_users;
         var started = false;
 
         const wsGameAdress = 'ws://'
@@ -57,6 +60,11 @@
                           + room_name
                           + '/';
         const gameSocket = new WebSocket(wsGameAdress);
+        gameSocket.onopen = function(e) {
+            gameSocket.send(JSON.stringify({
+                'connect_msg': ""
+            }));
+        };
 
         function Connector(wsurl) {
             this.socket = new WebSocket(wsurl);
@@ -104,7 +112,7 @@
             angular_positions[j] = angle;
             angle += 2 * Math.PI / nb_users;
         }
-        start_game();
+        // start_game();
 
 
 
@@ -160,24 +168,26 @@
             const data = JSON.parse(e.data);
             if (data.hasOwnProperty('chat_msg')) {
                 document.querySelector('#game-log').value += (data.chat_msg + '\n');
+            } else if (data.hasOwnProperty('connect_msg')) {
+                players = data.connect_msg;
+                nb_users = players.length;
+                $("#game-players").empty();
+                players.forEach(function(player) {
+                    $("#game-players").append('<li>'+player+'</li>');
+                });
             } else if (data.hasOwnProperty('ready_msg')) {
                 document.querySelector('#game-log').value += ("Go!" + '\n');
                 document.querySelector('#game-ready-submit').disabled = true;
                 started = true;
-                nb_users = parseInt(data.ready_msg);
-                console.log(data.users_order);
-                console.log(typeof data.users_order);
+                players = data.ready_msg;
+                nb_users = players.length;
                 start_game();
             } else if (data.hasOwnProperty('card_msg')) {
                 deck.flip();
                 document.querySelector('#game-log').value += ('The card has been flipped.' + '\n');
-            } else if (data.hasOwnProperty('quit_msg')) {
-                if (user_name == data.quit_msg) {
-                  gameSocket.close();
-                  window.location.replace("/game/disconnect");
-                }
+            } else if (data.hasOwnProperty('disconnect_msg')) {
                 nb_users--;
-                document.querySelector('#game-log').value += (data.quit_msg + ' has quit the game.' + '\n');
+                document.querySelector('#game-log').value += (data.disconnect_msg + ' has quit the game.' + '\n');
             } else {
               // pass
             }
@@ -201,11 +211,9 @@
             }
         };
 
-        document.querySelector('#game-quit-submit').onclick = function(e) {
-            gameSocket.send(JSON.stringify({
-                'quit_msg': user_name
-            }));
-        };
+        // document.querySelector('#game-quit-submit').onclick = function(e) {
+        //     close();
+        // };
 
         document.querySelector('#game-message-input').focus();
         document.querySelector('#game-message-input').onkeyup = function(e) {
@@ -222,6 +230,19 @@
             }));
             messageInputDom.value = '';
         };
+
+        window.onbeforeunload = function(){
+            return true;
+        }
+
+        $(window).bind("pageshow", function(event) {
+            if (event.originalEvent.persisted) {
+                window.location.reload();
+            }
+        });
+
     </script>
+
+
 </body>
 </html>

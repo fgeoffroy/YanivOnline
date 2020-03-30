@@ -1,39 +1,64 @@
-{% if current_user.is_authenticated %}
-    <p>Authenticated {{ current_user }}</p>
-{% else %}
-    <p>Anonymous</p>
-{% endif %}
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <title>Matchmaking</title>
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+</head>
+<body>
 
-<p>Users that are logged:</p>
-{% if users %}
-    <ul class="user-list">
-        {% for user in users %}
-            {% if user.is_authenticated %}
-                <li>{{ user }}</li>
-            {% endif %}
-        {% endfor %}
-    </ul>
-{% endif %}
+    {% if current_user.is_authenticated %}
+        <p>Authenticated {{ current_user }}</p>
+    {% else %}
+        <p>Anonymous</p>
+    {% endif %}
 
-<p>Rooms:</p>
-{% if rooms %}
-    <ul class="user-list">
-        {% for room in rooms %}
-            <li>{{ room }}</li>
-        {% endfor %}
-    </ul>
-{% endif %}
+    <p>Users that are logged:</p>
+    {% if users %}
+        <ul class="user-list">
+            {% for user in users %}
+                {% if user.is_authenticated %}
+                    <li>{{ user }}</li>
+                {% endif %}
+            {% endfor %}
+        </ul>
+    {% endif %}
 
-{% if conflict_user_name %}
-<p><strong>This name is already used.</strong></p>
-{% endif %}
+    <p>Rooms:</p>
+    {% if rooms %}
+        <ul class="user-list">
+            {% for room in rooms %}
+                <li>{{ room }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
 
-{% if conflict_nb_users %}
-<p><strong>This room is already full.</strong></p>
-{% endif %}
+    {% if conflict_user_name %}
+    <p><strong>This name is already used.</strong></p>
+    {% endif %}
 
-<form action="{% url "view_matchmaking" %}" method="post" content='text/html; charset=UTF-8' accept-charset="UTF-8">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <input type="submit" value="Submit" />
-</form>
+    {% if conflict_game_started %}
+    <p><strong>The game has already begun in this room.</strong></p>
+    {% endif %}
+
+    {% if conflict_nb_users %}
+    <p><strong>This room is already full.</strong></p>
+    {% endif %}
+
+    <form action="{% url "view_matchmaking" %}" method="post" content='text/html; charset=UTF-8' accept-charset="UTF-8">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <input type="submit" value="Submit" />
+    </form>
+
+    <script>
+    $(window).bind("pageshow", function(event) {
+        if (event.originalEvent.persisted) {
+            window.location.reload();
+        }
+    });
+    </script>
+
+</body>
+</html>
