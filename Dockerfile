@@ -22,3 +22,5 @@ RUN mkdir /var/www
 WORKDIR /var/www/yaniv
 
 EXPOSE 8080
+
+#Test conflict
