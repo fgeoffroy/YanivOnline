@@ -1,0 +1,3 @@
+[submodule "yaniv/game/static/game/deck-of-cards-master"]
+	path = yaniv/game/static/game/deck-of-cards-master
+	url = https://github.com/fgeoffroy/deck-of-cards.git
