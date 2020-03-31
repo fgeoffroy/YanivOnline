@@ -18,7 +18,6 @@ RUN pip install mysqlclient
 RUN python -m pip install channels_redis
 
 RUN mkdir /var/www
-COPY yaniv /var/www/yaniv
 
 WORKDIR /var/www/yaniv
 

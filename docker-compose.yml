@@ -1,6 +1,8 @@
 django:
   build: .
   command: ["./wait-for-it.sh", "mysql:3306", "--", "bash", "run.sh"]
+  volumes: 
+    - ./yaniv:/var/www/yaniv
   links:
     - mysql:mysql
     - redis:redis

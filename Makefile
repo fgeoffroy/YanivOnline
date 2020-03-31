@@ -1,8 +1,7 @@
 DOCKER_NAME=yanivonline
 
 test:
-	docker-compose build
-	docker-compose up -d
+	docker-compose up -d --build --force-recreate
 	sh build_scripts/inspect_container.sh
 
 clean: 
