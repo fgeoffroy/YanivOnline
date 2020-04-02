@@ -76,19 +76,27 @@ class GameConsumer(WebsocketConsumer):
                             if not player.ready:
                                 all_ready = False
                         if all_ready:
-                            # Randomize order
+                            # Randomize players' order
                             users_order = []
                             players = list(players)
                             shuffle(players)
                             for player in players:
                                 users_order.append(player.user.username)
+
+                            # Randomize cards' order
+                            # XX ATTENTION ICI DEPEND DES JOKERS
+                            cards_order = range(54)
+                            shuffle(cards_order)
+
+                            msg = {'users_order': users_order, 'cards_order': cards_order}
+
                             # Send message to room group
                             async_to_sync(self.channel_layer.group_send)(
                                 self.room_group_name,
                                 {
                                     'type': 'game_msg',
                                     'type_msg': type_msg,
-                                    'message': users_order
+                                    'message': msg
                                 }
                             )
                 else:

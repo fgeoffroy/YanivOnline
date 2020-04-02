@@ -56,8 +56,8 @@
         var started = false;
         var my_gap = 90;  // gap between cards in pixels (width of a card = 78)
         var others_gap = 10;
-        my_turn = false;
-        allow_click = false;
+        var my_turn = false;
+        var allow_click = false;
 
         const wsGameAdress = 'ws://'
                           + window.location.host
@@ -97,7 +97,6 @@
             });
         }
         var con = new Connector(wsGameAdress);
-        var con2 = new Connector(wsGameAdress);
 
 
 
@@ -105,7 +104,7 @@
 
 
         // create Deck
-        var deck = Deck(true, con);
+        var deck = Deck(true);
         var $container = document.getElementById('container');
         const hand_size = 5;
         const radius = 0.5;
@@ -115,16 +114,20 @@
         // XX TEMPORARY, JUST FOR TESTING PURPOSES
         players = ["Player 1", "Player 2", "Player 3"]
         nb_users = players.length;
-        my_index = 1;
-        start_game();
+        my_index = 0;
+        cards_order = [...Array(54).keys()];
+        shuffle(cards_order);
+        start_game(cards_order);
 
 
 
-        function start_game() {
+        function start_game(cards_order) {
             deck.mount($container);
-            deck.shuffle();
-            // console.log(deck.cards[3].$el.clientHeight);
-            // console.log(deck.cards[3].$el.clientWidth);
+            sort_deck(cards_order);
+
+            deck.cards.forEach(function (card) {
+                card.selected = false;
+            });
             deck.stack = [];
             for (var i = deck.cards.length-1; i >= 0; i--) {
                 var card = deck.cards[i]
@@ -157,8 +160,9 @@
             }
 
             for (const j of Array(nb_users).keys()) {
-                bubble_sort_hand(j)
+                bubble_sort_cards(deck.hands[j])
             }
+
 
             count = 1
             for (const i of Array(hand_size).keys()) {
@@ -171,56 +175,205 @@
                     var gap = j == 0 ? my_gap : others_gap;
                     var gap_x = gap * Math.sin((90 - deck.rots[j]) * Math.PI / 180) * (hand_ind - 2);
                     var gap_y = gap * Math.cos((90 - deck.rots[j]) * Math.PI / 180) * (hand_ind - 2);
-                    var x = gap_x + ((1 + radius * Math.cos(deck.angular_positions[j]) + 0) * window.innerWidth - window.innerWidth) / 2;
+                    var x = gap_x + ((1 + radius * Math.cos(deck.angular_positions[j])) * window.innerWidth - window.innerWidth) / 2;
                     var y = gap_y + ((1 - radius * Math.sin(deck.angular_positions[j])) * window.innerHeight - window.innerHeight) / 2;
                     var z = hand_ind;
                     var rot = deck.rots[j];
-                    var change_side = j == 0 ? true : false;
-                    // xx to change
-                    // change_side = true;
+                    var change_side = j == my_index ? true : false;
                     if (j == 0) {
                       card.enableClicking();
                     }
                     card.animateTo({
-                        delay: 1000 + count * 100, // wait 1 second + count * 2 ms
+                        delay: 1000 + count * 200, // wait 1 second + count * 2 ms
                         duration: 200,
                         ease: 'quartOut',
                         x: x,
                         y: y,
-                        z: z,
+                        z_end: z,
                         rot: rot,
                         change_side: change_side
                     });
                     count++;
                 }
             }
+
             var deck_ind = deck.cards.length - count;
-            var next_card = deck.cards[deck_ind];
-            next_card.enableClicking();
+            var card = deck.cards[deck_ind];
+            card.location = -2;
+            card.enableClicking();
+            var x = 90 + 0.5 * window.innerWidth - window.innerWidth / 2;
+            var y = 0.5 * window.innerHeight - window.innerHeight / 2;
+            card.animateTo({
+                delay: 1000 + count * 200, // wait 1 second + count * 2 ms
+                duration: 200,
+                ease: 'quartOut',
+                x: x,
+                y: y,
+                z_end: 0,
+                change_side: true,
+            });
+
+            count++;
+            var deck_ind = deck.cards.length - count;
+            var card = deck.cards[deck_ind];
+            card.location = -1;
+            card.enableClicking();
         }
+
+
+
+
+
+        function sort_deck(cards_order){
+            sorted_cards = [];
+            for (const ind of Array(deck.cards.length).keys()) {
+                var card = deck.cards[cards_order[ind]];
+                card.i = ind;
+                sorted_cards.push(card);
+            }
+            deck.cards = sorted_cards;
+
+            for (const ind of Array(deck.cards.length).keys()) {
+                var card = deck.cards[ind];
+                // card.i = ind;
+                var x = -ind / 4;
+                var y = -ind / 4;
+                var z = ind;
+                card.animateTo({
+                  delay: z * 2,
+                  duration: 200,
+                  x: plusminus(Math.random() * 40 + 20) * fontSize() / 16,
+                  y: y,
+                });
+                card.animateTo({
+                    delay: 200 + z * 2,
+                    duration: 200,
+                    x: x,
+                    y: y,
+                    z_start: z,
+                });
+            }
+        }
+
 
         function is_combination_correct(){
-            return true;
+            var is_combination_correct = false;
+            var selected_cards = get_selected_cards()
+            if (selected_cards.length == 1) {
+                is_combination_correct = true;
+            } else if (is_series(selected_cards)) {
+                is_combination_correct = true;
+            } else if (selected_cards.length > 2 && is_straight(selected_cards)) {
+                is_combination_correct = true;
+            }
+            return is_combination_correct;
         }
+
+
+        function is_series(cards){
+            var same_rank = true;
+            var rank;
+            cards.forEach(function (card) {
+                if (card.suit != 4) {
+                    if (rank === undefined) {
+                        rank = card.rank;
+                    } else {
+                        if (card.rank != rank) {
+                            same_rank = false;
+                        }
+                    }
+                }
+            });
+            return same_rank;
+        }
+
+
+
+        function is_straight(cards){
+            var is_straight = true;
+            var same_suit = is_same_suit(cards);
+            if (same_suit) {
+                cards = bubble_sort_cards(cards)
+
+                var nb_jokers = 0;
+                var previous_rank;
+                cards.forEach(function (card) {
+                    if (card.suit == 4) {
+                        nb_jokers++;
+                    } else if (previous_rank === undefined) {
+                        previous_rank = card.rank;
+                    } else if (card.rank == previous_rank + 1) {
+                        previous_rank++;
+                    } else if (nb_jokers > 0) {
+                        nb_jokers--;
+                    } else {
+                        is_straight = false;
+                    }
+                });
+                // return true;
+            } else {
+                is_straight = false;
+            }
+            return is_straight;
+        }
+
+
+
+        function is_same_suit(cards){
+            var same_suit = true;
+            var suit;
+            cards.forEach(function (card) {
+                if (card.suit != 4) {
+                    if (suit === undefined) {
+                        suit = card.suit;
+                    } else {
+                        if (card.suit != suit) {
+                            same_suit = false;
+                        }
+                    }
+                }
+            });
+            return same_suit;
+        }
+
 
         function get_selected_cards(){
-            return "cards";
+            var selected_cards = [];
+            var hand = deck.hands[my_index];
+            // console.log(hand);
+            hand.forEach(function (card) {
+                if (card.selected) {
+                    selected_cards.push(card);
+                }
+            });
+            return selected_cards;
         }
 
 
+        function card_up_down(card, is_up){
+            var dy = is_up ? -30 : 30;
+            var y = card.y + dy
+            card.animateTo({
+                delay: 0,
+                duration: 200,
+                ease: 'quartOut',
+                y: y,
+            });
+        }
 
-        function bubble_sort_hand(ind_hand){
-            var hand = deck.hands[ind_hand];
-            var len = hand.length;
+
+        function bubble_sort_cards(cards){
+            var len = cards.length;
             for (var i = len-1; i>=0; i--) {
                 for (var j = 1; j<=i; j++) {
-                    if (is_card_sup(hand[j-1], hand[j])) {
-                        var temp = hand[j-1];
-                        hand[j-1] = hand[j];
-                        hand[j] = temp;
+                    if (is_card_sup(cards[j-1], cards[j])) {
+                        var temp = cards[j-1];
+                        cards[j-1] = cards[j];
+                        cards[j] = temp;
                     }
                 }
             }
+            return cards;
         }
 
 
@@ -244,6 +397,33 @@
                 }
             }
         }
+
+
+        /**
+       * Shuffles array in place.
+       * @param {Array} a items An array containing the items.
+       */
+      function shuffle(a) {
+          var j, x, i;
+          for (i = a.length - 1; i > 0; i--) {
+              j = Math.floor(Math.random() * (i + 1));
+              x = a[i];
+              a[i] = a[j];
+              a[j] = x;
+          }
+          return a;
+      }
+
+
+      function fontSize() {
+          return window.getComputedStyle(document.body).getPropertyValue('font-size').slice(0, -2);
+      }
+
+
+      function plusminus(value) {
+          var plusminus = Math.round(Math.random()) ? -1 : 1;
+          return plusminus * value;
+      }
 
 
 
@@ -273,9 +453,9 @@
                 document.querySelector('#game-log').value += ("Go!" + '\n');
                 document.querySelector('#game-ready-submit').disabled = true;
                 started = true;
-                players = data.ready_msg;
+                players = data.ready_msg.users_order;
                 nb_users = players.length;
-                start_game();
+                start_game(data.ready_msg.cards_order);
             } else if (data.hasOwnProperty('card_msg')) {
                 document.querySelector('#game-log').value += (data.card_msg + '\n');
             } else if (data.hasOwnProperty('disconnect_msg')) {
