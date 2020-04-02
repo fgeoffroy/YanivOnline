@@ -54,8 +54,10 @@
         var my_index;
         var nb_users;
         var started = false;
-        var gap = 20;  // gap between cards in pixels (width of a card = 78)
-
+        var my_gap = 90;  // gap between cards in pixels (width of a card = 78)
+        var others_gap = 10;
+        my_turn = false;
+        allow_click = false;
 
         const wsGameAdress = 'ws://'
                           + window.location.host
@@ -95,6 +97,7 @@
             });
         }
         var con = new Connector(wsGameAdress);
+        var con2 = new Connector(wsGameAdress);
 
 
 
@@ -110,7 +113,7 @@
 
 
         // XX TEMPORARY, JUST FOR TESTING PURPOSES
-        players = ["Player 1", "Player 2", "Player 3", "Player 4", "Player 5"]
+        players = ["Player 1", "Player 2", "Player 3"]
         nb_users = players.length;
         my_index = 1;
         start_game();
@@ -119,14 +122,16 @@
 
         function start_game() {
             deck.mount($container);
-            var card = deck.cards[0];
-            card.setSide('front');
-            console.log(card.pos);
-            console.log(card.rank);
-            console.log(card.suit);
-            // deck.shuffle();
+            deck.shuffle();
             // console.log(deck.cards[3].$el.clientHeight);
             // console.log(deck.cards[3].$el.clientWidth);
+            deck.stack = [];
+            for (var i = deck.cards.length-1; i >= 0; i--) {
+                var card = deck.cards[i]
+                card.location = -1
+                deck.stack.push(card);
+            }
+            deck.discard = [];
             deck.hands = [];
             for (const i of Array(nb_users).keys()) {
                 deck.hands[i] = [];
@@ -140,13 +145,19 @@
                 angle -= 2 * Math.PI / nb_users;
             }
             var count = 1;
-            var delay_count = 0;
             for (const i of Array(hand_size).keys()) {
                 for (const j of Array(nb_users).keys()) {
                     var deck_ind = deck.cards.length - count;
-                    deck.hands[j].push(deck_ind);
+                    var card = deck.cards[deck_ind];
+                    deck.stack.shift();
+                    card.location = j
+                    deck.hands[j].push(card);
                     count++;
                 }
+            }
+
+            for (const j of Array(nb_users).keys()) {
+                bubble_sort_hand(j)
             }
 
             count = 1
@@ -155,38 +166,55 @@
                     var deck_ind = deck.cards.length - count;
                     var card = deck.cards[deck_ind];
                     var hand = deck.hands[j]
-                    var hand_ind = hand.indexOf(deck_ind);
+                    var hand_ind = hand.indexOf(card);
+
+                    var gap = j == 0 ? my_gap : others_gap;
                     var gap_x = gap * Math.sin((90 - deck.rots[j]) * Math.PI / 180) * (hand_ind - 2);
                     var gap_y = gap * Math.cos((90 - deck.rots[j]) * Math.PI / 180) * (hand_ind - 2);
                     var x = gap_x + ((1 + radius * Math.cos(deck.angular_positions[j]) + 0) * window.innerWidth - window.innerWidth) / 2;
                     var y = gap_y + ((1 - radius * Math.sin(deck.angular_positions[j])) * window.innerHeight - window.innerHeight) / 2;
+                    var z = hand_ind;
                     var rot = deck.rots[j];
-                    var new_side = j == 0 ? 'front' : 'back';
+                    var change_side = j == 0 ? true : false;
                     // xx to change
-                    card.setSide('front');
-                    // card.$el.style.zIndex = card.pos;
-                    // card.$el.style['z-index'] = hand_ind;
+                    // change_side = true;
+                    if (j == 0) {
+                      card.enableClicking();
+                    }
                     card.animateTo({
-                        delay: 1000 + count * 200, // wait 1 second + count * 2 ms
-                        duration: 500,
+                        delay: 1000 + count * 100, // wait 1 second + count * 2 ms
+                        duration: 200,
                         ease: 'quartOut',
                         x: x,
                         y: y,
-                        z: hand_ind,
+                        z: z,
                         rot: rot,
+                        change_side: change_side
                     });
                     count++;
                 }
             }
+            var deck_ind = deck.cards.length - count;
+            var next_card = deck.cards[deck_ind];
+            next_card.enableClicking();
         }
+
+        function is_combination_correct(){
+            return true;
+        }
+
+        function get_selected_cards(){
+            return "cards";
+        }
+
 
 
         function bubble_sort_hand(ind_hand){
             var hand = deck.hands[ind_hand];
             var len = hand.length;
-            for (var i = len-1; i>=0; i--){
-                for(var j = 1; j<=i; j++){
-                    if(is_card_sup(hand, j-1, j)){
+            for (var i = len-1; i>=0; i--) {
+                for (var j = 1; j<=i; j++) {
+                    if (is_card_sup(hand[j-1], hand[j])) {
                         var temp = hand[j-1];
                         hand[j-1] = hand[j];
                         hand[j] = temp;
@@ -197,32 +225,27 @@
 
 
 
-        function is_card_sup(hand, i, j){
-            var card_i = deck.cards[hand[i]];
-            var card_j = deck.cards[hand[j]];
-            if (card_i.suit == 4) {
-                if (card_j.suit == 4) {
-                    return card_i.rank > card_j.rank;
+        function is_card_sup(card_1, card_2){
+            if (card_1.suit == 4) {
+                if (card_2.suit == 4) {
+                    return card_1.rank > card_2.rank;
                 } else {
                     return false;
                 }
             } else {
-                if (card_j.suit == 4) {
+                if (card_2.suit == 4) {
                     return true;
                 } else {
-                    if (card_i.rank == card_j.rank) {
-                        return card_i.suit > card_j.suit;
+                    if (card_1.rank == card_2.rank) {
+                        return card_1.suit > card_2.suit;
                     } else {
-                        return card_i.rank > card_j.rank;
+                        return card_1.rank > card_2.rank;
                     }
                 }
             }
         }
 
 
-        // setTimeout(function(){
-        //     deck.sort();
-        // }, 5000);
 
         // Rank : from 1 to 13 (10 + face cards)
         // Suits :
@@ -254,7 +277,6 @@
                 nb_users = players.length;
                 start_game();
             } else if (data.hasOwnProperty('card_msg')) {
-                deck.flip();
                 document.querySelector('#game-log').value += (data.card_msg + '\n');
             } else if (data.hasOwnProperty('disconnect_msg')) {
                 // XX TO DO, UPDATE GAME without this player
