@@ -243,7 +243,10 @@ function is_combination_correct(){
     var is_combination_correct = false;
     var is_combination_coris_straightrect = false;
     var selected_cards = get_selected_cards(get_ind=false)
-    if (selected_cards.length > 0 && is_series(selected_cards)) {
+    if (selected_cards.length == 1) {
+        is_combination_correct = true;
+    }
+    else if (selected_cards.length > 1 && is_series(selected_cards)) {
         is_combination_correct = true;
     } else if (selected_cards.length > 2 && is_straight(selected_cards)) {
         is_combination_correct = true;
@@ -474,7 +477,7 @@ gameSocket.onmessage = function(e) {
         var d = data.card_msg;
         update_game(d);
     } else if (data.hasOwnProperty('yaniv_msg')) {
-        document.querySelector('#game-log').value += ('Yaniv!' + '\n');
+        document.querySelector('#game-log').value += ('Yaniv !' + '\n');
         var end = update_scores(data.yaniv_msg.user_ind);
         $("#game-scores").empty();
         players.forEach(function(player, ind) {
