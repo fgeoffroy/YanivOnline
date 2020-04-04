@@ -668,7 +668,9 @@ function discard_sort_and_clicking(is_straight) {
             }
         });
         var is_sorted = false;
-        while (!is_sorted) {
+        const max_iter = 10;   // XX Arbitrary value here just to prevent infinite loop (should be less, the exact number depends on the number of jokers)
+        var count = 0;
+        while (!is_sorted or count < max_iter) {
             var previous_rank = null;
             for (const ind of Array(deck.discard.length).keys()) {
                 var card = deck.discard[ind];
@@ -688,6 +690,7 @@ function discard_sort_and_clicking(is_straight) {
                     break;
                 }
             }
+            count++;
         }
         //Enable clicking only in the extreme
         if (my_turn) {
