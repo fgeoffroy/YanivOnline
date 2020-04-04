@@ -16,10 +16,10 @@ var my_turn = false;
 const speed = 200;
 const hand_size = 5;
 const radius = 0.6;
-const min_yaniv = 20;
+const min_yaniv = 7;
 const asaf_cost = 30;
 const cut_level = 50;
-const losing_score = 30;
+const losing_score = 200;
 
 const wsGameAdress = 'ws://'
                   + window.location.host
