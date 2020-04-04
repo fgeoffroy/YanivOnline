@@ -11,6 +11,9 @@ def view_matchmaking(request):
     for room in rooms:
         if room.nb_users < 1:
             room.delete()
+        users = User.objects.filter(player__room=room)
+        if not users:
+            room.delete()
 
     form = MatchmakingForm(request.POST or None)
     conflict_user_name = False

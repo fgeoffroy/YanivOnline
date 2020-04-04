@@ -68,7 +68,7 @@ class GameConsumer(WebsocketConsumer):
                     player.save()
                     room = Room.objects.filter(name=self.room_name).first()
                     nb_users = room.nb_users
-                    if nb_users >= 1:   # XX ATTENTION REMMETTRE >
+                    if nb_users > 1:   # XX ATTENTION REMMETTRE > 1
                     # if nb_users > 1:
                         players = Player.objects.filter(room__name=self.room_name)
                         all_ready = True
@@ -85,7 +85,7 @@ class GameConsumer(WebsocketConsumer):
 
                             # Randomize cards' order
                             # XX ATTENTION ICI DEPEND DES JOKERS
-                            cards_order = range(54)
+                            cards_order = list(range(54))
                             shuffle(cards_order)
 
                             msg = {'users_order': users_order, 'cards_order': cards_order}
@@ -113,12 +113,14 @@ class GameConsumer(WebsocketConsumer):
                         users_list.append(player.user.username)
                     msg = users_list
 
-            # if type_msg == "quit_msg":
-            #     print("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
-            #     print(msg)
-                # player = Player.objects.filter(user__username=msg).first()
-                # if player:
-                #     player.delete()
+
+            if type_msg == "yaniv_msg":
+                cards_order = list(range(54))
+                shuffle(cards_order)
+                msg = {
+                    'user_ind': msg,
+                    'cards_order': cards_order
+                }
 
 
             # Send message to room group
