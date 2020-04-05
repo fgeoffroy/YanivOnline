@@ -452,7 +452,7 @@ function plusminus(value) {
 gameSocket.onmessage = function(e) {
     const data = JSON.parse(e.data);
     if (data.hasOwnProperty('chat_msg')) {
-        document.querySelector('#game-log').value += (data.chat_msg + '\n');
+        document.querySelector('#game-log').value += (data.chat_msg.user_name + ': ' + data.chat_msg.msg + '\n');
     } else if (data.hasOwnProperty('connect_msg')) {
         players = data.connect_msg;
         nb_users = players.length;
@@ -477,7 +477,8 @@ gameSocket.onmessage = function(e) {
         var d = data.card_msg;
         update_game(d);
     } else if (data.hasOwnProperty('yaniv_msg')) {
-        document.querySelector('#game-log').value += ('Yaniv !' + '\n');
+        const yaniv_name = players[data.yaniv_msg.user_ind];
+        document.querySelector('#game-log').value += (yaniv_name + ': ' + 'Yaniv !' + '\n');
         var end = update_scores(data.yaniv_msg.user_ind);
         $("#game-scores").empty();
         players.forEach(function(player, ind) {
@@ -734,10 +735,10 @@ function update_scores(yaniv_usr_ind) {
     for (const i of Array(nb_users).keys()) {
         if (i != yaniv_usr_ind && hand_values[i] <= yaniv_value) {
             asaf = true;
+            document.querySelector('#game-log').value += (players[i] + ': ' + 'Contre-Yaniv !' + '\n');
         }
     }
     if (asaf) {
-        document.querySelector('#game-log').value += ('Contre-Yaniv !' + '\n');
         hand_values[yaniv_usr_ind] = asaf_cost + yaniv_value;
     }
 
@@ -829,7 +830,11 @@ document.querySelector('#game-message-input').onkeyup = function(e) {
 
 document.querySelector('#game-message-submit').onclick = function(e) {
     const messageInputDom = document.querySelector('#game-message-input');
-    const message = messageInputDom.value;
+    // const message = messageInputDom.value;
+    const message = {
+        'user_name': user_name,
+        'msg': messageInputDom.value
+    };
     gameSocket.send(JSON.stringify({
         'chat_msg': message
     }));
