@@ -1,3 +1,4 @@
+print_chat('The game starts when everybody is ready.');
 const user_name = JSON.parse(document.getElementById('user_name').textContent);
 const room_name = JSON.parse(document.getElementById('room_name').textContent);
 // var nb_users = {{ current_user.player.room.nb_users }}
@@ -453,7 +454,7 @@ function plusminus(value) {
 gameSocket.onmessage = function(e) {
     const data = JSON.parse(e.data);
     if (data.hasOwnProperty('chat_msg')) {
-        document.querySelector('#game-log').value += (data.chat_msg.user_name + ': ' + data.chat_msg.msg + '\n');
+        print_chat(data.chat_msg.user_name + ': ' + data.chat_msg.msg);
     } else if (data.hasOwnProperty('connect_msg')) {
         players = data.connect_msg;
         nb_users = players.length;
@@ -462,7 +463,7 @@ gameSocket.onmessage = function(e) {
             $("#game-scores").append('<li>' + player + ': ' + 0 + '</li>');
         });
     } else if (data.hasOwnProperty('ready_msg')) {
-        document.querySelector('#game-log').value += ("Go!" + '\n');
+        print_chat('Go!');
         document.querySelector('#game-ready-submit').disabled = true;
         document.querySelector('#game-yaniv-submit').disabled = false;
         started = true;
@@ -480,17 +481,16 @@ gameSocket.onmessage = function(e) {
         update_game(d);
     } else if (data.hasOwnProperty('yaniv_msg')) {
         const yaniv_name = players[data.yaniv_msg.user_ind];
-        document.querySelector('#game-log').value += (yaniv_name + ': ' + 'Yaniv !' + '\n');
+        print_chat(yaniv_name + ': ' + 'Yaniv !');
         var end = update_scores(data.yaniv_msg.user_ind);
         $("#game-scores").empty();
         players.forEach(function(player, ind) {
             $("#game-scores").append('<li>' + player + ': ' + scores[ind] + '</li>');
         });
+        deck.unmount();
         if (end) {
-            document.querySelector('#game-log').value += (get_winner() + ' has won!' + '\n');
-            deck.unmount();
+            print_chat(get_winner() + ' has won!');
         } else {
-            deck.unmount();
             cards_order = data.yaniv_msg.cards_order;
             update_my_turn_start()
             start_round();
@@ -498,7 +498,13 @@ gameSocket.onmessage = function(e) {
     } else if (data.hasOwnProperty('disconnect_msg')) {
         // XX TO DO, UPDATE GAME without this player
         // nb_users--;
-        document.querySelector('#game-log').value += (data.disconnect_msg + ' has quit the game.' + '\n');
+        deck.unmount();
+        print_chat(data.disconnect_msg + ' has quit the game.');
+        if (nb_users == 2) {
+            print_chat('The game has ended.');
+        } else {
+            nb_users--;
+        }
     } else {
       // pass
     }
@@ -751,7 +757,7 @@ function update_scores(yaniv_usr_ind) {
     for (const i of Array(nb_users).keys()) {
         if (i != yaniv_usr_ind && hand_values[i] <= yaniv_value) {
             asaf = true;
-            document.querySelector('#game-log').value += (players[i] + ': ' + 'Contre-Yaniv !' + '\n');
+            print_chat(players[i] + ': ' + 'Contre-Yaniv !');
         }
     }
     if (asaf) {
@@ -806,6 +812,14 @@ function get_winner() {
     }
     return winner;
 };
+
+
+
+function print_chat(str) {
+    var textarea = document.querySelector('#game-log');
+    textarea.value += (str + '\n');
+    textarea.scrollTop = textarea.scrollHeight;
+}
 
 
 
