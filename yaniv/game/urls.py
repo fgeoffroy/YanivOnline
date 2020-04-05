@@ -7,4 +7,5 @@ urlpatterns = [
     # path('disconnect/', views.view_disconnect, name='view_disconnect'),
     path('', views.view_matchmaking, name='view_matchmaking'),
     path('<str:room_name>/', views.view_room, name='view_room'),
+    path('rules/yaniv', views.view_rules, name='view_rules'),
 ]

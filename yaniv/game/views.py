@@ -68,6 +68,10 @@ def view_room(request, room_name):
         return render(request, 'game/room.html', locals())
     else:
         return redirect(view_matchmaking)
+
+
+def view_rules(request):
+    return render(request, 'game/rules.html', locals())
 #
 #
 # def view_disconnect(request):

@@ -12,6 +12,7 @@ const others_gap = 10;
 const discard_gap = 60;
 const stack_left_shift = 90;
 var who_starts;
+var whose_turn;
 var my_turn = false;
 const speed = 200;
 const hand_size = 5;
@@ -470,6 +471,7 @@ gameSocket.onmessage = function(e) {
         my_index = players.indexOf(user_name);
         my_turn = my_index == 0 ? true : false;
         who_starts = 0;
+        whose_turn = 0;
         scores = Array.apply(null, new Array(nb_users)).map(Number.prototype.valueOf,0);
         cards_order = data.ready_msg.cards_order;
         start_round();
@@ -509,7 +511,12 @@ gameSocket.onmessage = function(e) {
 
 function place_names() {
     for (const i of Array(nb_users).keys()) {
+        element = document.getElementById(players[i]);
+        if (element != null) {
+            element.parentNode.removeChild(element);
+        }
         var g = document.createElement("p");
+        g.setAttribute("id", players[i]);
         var t = document.createTextNode(players[i]);
         g.appendChild(t);
         g.style.position = "absolute";
@@ -517,9 +524,15 @@ function place_names() {
         var y = ((2 - radius * 1.4 * Math.sin(deck.angular_positions[i])) * window.innerHeight - window.innerHeight) / 2;
         g.style.left = x+'px';
         g.style.top = y+'px';
+        if (i == whose_turn) {
+            g.style.color = 'blue';
+        }
         document.body.appendChild(g);
     }
 };
+
+
+
 
 
 
@@ -531,19 +544,22 @@ function update_my_turn_start() {
         who_starts++;
         my_turn = my_index == who_starts ? true : false;
     }
+    whose_turn = who_starts;
 };
 
 function update_my_turn(user_ind) {
     if (user_ind == nb_users - 1) {
-        my_turn = my_index == 0 ? true : false;
+        whose_turn = 0;
     } else {
-        my_turn = my_index == user_ind + 1 ? true : false;
+        whose_turn = user_ind + 1;
     }
+    my_turn = my_index == whose_turn ? true : false;
 };
 
 
 function update_game(d) {
     update_my_turn(d.user_ind)
+    place_names();
 
     // Give card to player
     var card;

@@ -22,6 +22,8 @@
     <input id="game-message-submit" type="button" value="Send">
     <input type="checkbox" id="game-ready-submit" unchecked>
     <input id="game-yaniv-submit" type="button" value="Yaniv" disabled>
+    <!-- <p><a class="btn" href="/game/rules/yaniv" target="_blank">Rules</a></p> -->
+    <p><a class="btn" href="https://en.wikipedia.org/wiki/Yaniv_(card_game)" target="_blank">Rules</a></p>
     {{ current_user.username|json_script:"user_name" }}
     {{ room_name|json_script:"room_name" }}
 
