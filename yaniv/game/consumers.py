@@ -34,18 +34,15 @@ class GameConsumer(WebsocketConsumer):
 
 
         # Send message to room group
-        players = Player.objects.filter(room__name=self.room_name)
-        if players:
-            users_list = []
-            for player in players:
-                users_list.append(player.user.username)
-            msg = users_list
+        cards_order = list(range(54))
+        shuffle(cards_order)
+        msg = {'user_name': user_name, 'cards_order': cards_order}
         async_to_sync(self.channel_layer.group_send)(
             self.room_group_name,
             {
                 'type': 'game_msg',
                 'type_msg': 'disconnect_msg',
-                'message': user_name
+                'message': msg
             }
         )
         # Leave room group
@@ -76,6 +73,8 @@ class GameConsumer(WebsocketConsumer):
                             if not player.ready:
                                 all_ready = False
                         if all_ready:
+                            room.started = True
+                            room.save()
                             # Randomize players' order
                             users_order = []
                             players = list(players)
@@ -111,7 +110,10 @@ class GameConsumer(WebsocketConsumer):
                     users_list = []
                     for player in players:
                         users_list.append(player.user.username)
-                    msg = users_list
+                    msg = {
+                        'new_user_name': msg,
+                        'users_list': users_list
+                    }
 
 
             if type_msg == "yaniv_msg":

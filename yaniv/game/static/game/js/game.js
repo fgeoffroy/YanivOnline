@@ -31,7 +31,7 @@ const wsGameAdress = 'ws://'
 const gameSocket = new WebSocket(wsGameAdress);
 gameSocket.onopen = function(e) {
     gameSocket.send(JSON.stringify({
-        'connect_msg': ""
+        'connect_msg': user_name
     }));
 };
 
@@ -456,12 +456,13 @@ gameSocket.onmessage = function(e) {
     if (data.hasOwnProperty('chat_msg')) {
         print_chat(data.chat_msg.user_name + ': ' + data.chat_msg.msg);
     } else if (data.hasOwnProperty('connect_msg')) {
-        players = data.connect_msg;
+        players = data.connect_msg.users_list;
         nb_users = players.length;
         $("#game-scores").empty();
         players.forEach(function(player) {
             $("#game-scores").append('<li>' + player + ': ' + 0 + '</li>');
         });
+        print_chat(data.connect_msg.new_user_name + ' has joined the room.');
     } else if (data.hasOwnProperty('ready_msg')) {
         print_chat('Go!');
         document.querySelector('#game-ready-submit').disabled = true;
@@ -496,14 +497,42 @@ gameSocket.onmessage = function(e) {
             start_round();
         }
     } else if (data.hasOwnProperty('disconnect_msg')) {
-        // XX TO DO, UPDATE GAME without this player
-        // nb_users--;
-        deck.unmount();
-        print_chat(data.disconnect_msg + ' has quit the game.');
-        if (nb_users == 2) {
-            print_chat('The game has ended.');
-        } else {
-            nb_users--;
+        var left_name = data.disconnect_msg.user_name;
+        if (players.indexOf(left_name) > -1) {
+            if (started) {
+                deck.unmount();
+                print_chat(data.disconnect_msg.user_name + ' has left the room.');
+                if (nb_users == 2) {
+                    print_chat('The game has ended.');
+                } else {
+                    nb_users--;
+                    var left_index = players.indexOf(left_name);
+                    players.splice(left_index, 1);
+                    scores.splice(left_index, 1);
+                    deck.hands.splice(left_index, 1);
+                    deck.angular_positions.splice(left_index, 1);
+                    deck.rots.splice(left_index, 1);
+                    $("#game-scores").empty();
+                    players.forEach(function(player) {
+                        $("#game-scores").append('<li>' + player + ': ' + 0 + '</li>');
+                    });
+                    update_my_turn_left(left_index)
+                    element = document.getElementById(left_name);
+                    if (element != null) {
+                        element.parentNode.removeChild(element);
+                    }
+                    cards_order = data.disconnect_msg.cards_order;
+                    start_round();
+                }
+            } else {
+                var left_index = players.indexOf(left_name);
+                players.splice(left_index, 1);
+                nb_users--;
+                $("#game-scores").empty();
+                players.forEach(function(player) {
+                    $("#game-scores").append('<li>' + player + ': ' + 0 + '</li>');
+                });
+            }
         }
     } else {
       // pass
@@ -544,13 +573,12 @@ function place_names() {
 
 function update_my_turn_start() {
     if (who_starts == nb_users - 1) {
-        my_turn = my_index == 0 ? true : false;
         who_starts = 0;
     } else {
         who_starts++;
-        my_turn = my_index == who_starts ? true : false;
     }
     whose_turn = who_starts;
+    my_turn = my_index == whose_turn ? true : false;
 };
 
 function update_my_turn(user_ind) {
@@ -559,6 +587,17 @@ function update_my_turn(user_ind) {
     } else {
         whose_turn = user_ind + 1;
     }
+    my_turn = my_index == whose_turn ? true : false;
+};
+
+function update_my_turn_left(left_index) {
+    if (who_starts == left_index && who_starts == nb_users - 1) {
+        who_starts = 0;
+    } else if (who_starts > left_index) {
+        who_starts--;
+    }
+    whose_turn = who_starts;
+    my_index = players.indexOf(user_name);
     my_turn = my_index == whose_turn ? true : false;
 };
 
