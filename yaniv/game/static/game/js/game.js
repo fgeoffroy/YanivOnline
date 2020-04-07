@@ -679,7 +679,6 @@ function update_game(d) {
     if (my_index != d.user_ind) {
         shuffle(randomized_hand);
     }
-    cards_order = [...Array(54).keys()];
     deck.hands[d.user_ind].forEach(function (card, hand_ind) {
         var gap = d.user_ind == my_index ? my_gap : others_gap;
         var gap_x = gap * Math.sin((90 - deck.rots[d.user_ind]) * Math.PI / 180) * (randomized_hand[hand_ind] - 2);
