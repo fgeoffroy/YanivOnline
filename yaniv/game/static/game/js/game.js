@@ -647,6 +647,7 @@ function update_game(d) {
     // Place selected cards in the discard and sort and enable clicking if my turn and not a middle card if straight
     d.selected_cards_ind.forEach(function (ind) {
         var card = deck.hands[d.user_ind][ind];
+        card.selected = false;
         card.location = -2;
         deck.discard.push(card);
     });
@@ -673,13 +674,19 @@ function update_game(d) {
 
     // Place the new card in the hand and sort and ENABLECLICKING if myturn
     bubble_sort_cards(deck.hands[d.user_ind]);
+    // Randomize position of oppenents' cards
+    var randomized_hand = [...Array(deck.hands[d.user_ind].length).keys()];
+    if (my_index != d.user_ind) {
+        shuffle(randomized_hand);
+    }
+    cards_order = [...Array(54).keys()];
     deck.hands[d.user_ind].forEach(function (card, hand_ind) {
         var gap = d.user_ind == my_index ? my_gap : others_gap;
-        var gap_x = gap * Math.sin((90 - deck.rots[d.user_ind]) * Math.PI / 180) * (hand_ind - 2);
-        var gap_y = gap * Math.cos((90 - deck.rots[d.user_ind]) * Math.PI / 180) * (hand_ind - 2);
+        var gap_x = gap * Math.sin((90 - deck.rots[d.user_ind]) * Math.PI / 180) * (randomized_hand[hand_ind] - 2);
+        var gap_y = gap * Math.cos((90 - deck.rots[d.user_ind]) * Math.PI / 180) * (randomized_hand[hand_ind] - 2);
         var x = gap_x + ((1 + radius * Math.cos(deck.angular_positions[d.user_ind])) * window.innerWidth - window.innerWidth) / 2;
         var y = gap_y + ((1 - radius * Math.sin(deck.angular_positions[d.user_ind])) * window.innerHeight - window.innerHeight) / 2;
-        var z = hand_ind;
+        var z = randomized_hand[hand_ind];
         var rot = deck.rots[d.user_ind];
 
         // if (rot > 360) {
