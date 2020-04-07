@@ -624,13 +624,16 @@ function update_game(d) {
     // Empty the discard
     deck.discard.forEach(function (card, ind) {
         card.location = -1;
-        card.setSide('back');
+        // card.setSide('back');
         deck.stack.push(card);
     });
     deck.discard = [];
 
     // Update the stack
     deck.stack.slice().reverse().forEach(function (card, ind) {
+        if (card.side == 'front') {
+            card.setSide('back');
+        }
         var x = (- stack_left_shift)-ind / 4;
         var y = -ind / 4;
         var z = ind;
