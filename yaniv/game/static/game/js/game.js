@@ -242,19 +242,19 @@ function sort_deck(cards_order){
 
 
 function is_combination_correct(){
-    var is_combination_correct = false;
-    var is_combination_coris_straightrect = false;
+    var correct = false;
+    var straight = false;
     var selected_cards = get_selected_cards(get_ind=false)
     if (selected_cards.length == 1) {
-        is_combination_correct = true;
+        correct = true;
     }
     else if (selected_cards.length > 1 && is_series(selected_cards)) {
-        is_combination_correct = true;
+        correct = true;
     } else if (selected_cards.length > 2 && is_straight(selected_cards)) {
-        is_combination_correct = true;
-        is_straight = true;
+        correct = true;
+        straight = true;
     }
-    return [is_combination_correct, is_straight];
+    return [correct, straight];
 }
 
 
@@ -278,7 +278,7 @@ function is_series(cards){
 
 
 function is_straight(cards){
-    var is_straight = true;
+    var straight = true;
     var same_suit = is_same_suit(cards);
     if (same_suit) {
         cards = bubble_sort_cards(cards);
@@ -301,15 +301,15 @@ function is_straight(cards){
                 nb_jokers--;
                 previous_rank++;
             } else {
-                is_straight = false;
+                straight = false;
                 break;
             }
         }
         // return true;
     } else {
-        is_straight = false;
+        straight = false;
     }
-    return is_straight;
+    return straight;
 }
 
 
