@@ -15,6 +15,8 @@ const stack_left_shift = 90;
 var who_starts;
 var whose_turn;
 var my_turn = false;
+var my_turn_before = false;
+var card_slap_down;
 const speed = 200;
 const hand_size = 5;
 const radius = 0.6;
@@ -38,7 +40,7 @@ gameSocket.onopen = function(e) {
 function Connector(wsurl) {
     this.socket = new WebSocket(wsurl);
 }
-Connector.prototype.emit = function(msg) {
+Connector.prototype.emit = function(type, msg) {
     var self = this;
     (function _waitForSocketConnection(callback) {
         setTimeout(function() {
@@ -55,9 +57,9 @@ Connector.prototype.emit = function(msg) {
         }, 5);
     })(function() {
         // console.log("message sent!!!");
-        self.socket.send(JSON.stringify({
-            'card_msg': msg
-        }));
+        var obj = {};
+        obj[type] = msg;
+        self.socket.send(JSON.stringify(obj));
     });
 }
 var con = new Connector(wsGameAdress);
@@ -96,6 +98,7 @@ function start_round() {
         card.setSide('back');
         card.disableClicking();
         card.selected = false;
+        card.just_drawn = false;
     });
     deck.stack = [];
     for (var i = deck.cards.length-1; i >= 0; i--) {
@@ -159,7 +162,8 @@ function start_round() {
             var z = hand_ind;
             var rot = deck.rots[j];
             var change_side = j == my_index ? true : false;
-            if (j == my_index && my_turn) {
+            if (j == my_index) {
+            // if (j == my_index && my_turn) {
                 card.enableClicking();
             }
             card.animateTo({
@@ -245,14 +249,34 @@ function is_combination_correct(){
     var correct = false;
     var straight = false;
     var selected_cards = get_selected_cards(get_ind=false)
-    if (selected_cards.length == 1) {
+    if (deck.hands[my_index].length == 0) {
         correct = true;
+        card_slap_down = {
+          'type': null
+        };
+    } else if (selected_cards.length == 1) {
+        correct = true;
+        var card = selected_cards[0];
+        if (card.suit == 4) {
+            card_slap_down = {
+              'type': 'joker'
+            };
+        } else {
+            card_slap_down = {
+              'type': 'series',
+              'rank': card.rank
+            };
+        }
     }
     else if (selected_cards.length > 1 && is_series(selected_cards)) {
         correct = true;
     } else if (selected_cards.length > 2 && is_straight(selected_cards)) {
         correct = true;
         straight = true;
+        card_slap_down = {
+          'type': 'straight'
+        };
+        // XX COMMENT FAIRE PAR EXMPLE SI JOKER 5 6 ??  OU ALORS 5 6 JOKER ?????
     }
     return [correct, straight];
 }
@@ -272,6 +296,18 @@ function is_series(cards){
             }
         }
     });
+    if (same_rank) {
+        if (rank === undefined) {
+            card_slap_down = {
+              'type': 'joker'
+            };
+        } else {
+            card_slap_down = {
+              'type': 'series',
+              'rank': rank
+            };
+        }
+    }
     return same_rank;
 }
 
@@ -349,6 +385,23 @@ function get_selected_cards(get_ind){
 }
 
 
+function is_slap_down_correct(click_suit, click_rank){
+    var correct = false;
+    var selected_cards = get_selected_cards(get_ind=false)
+    if (selected_cards.length == 1) {
+        var card = selected_cards[0];
+        if (card.just_drawn) {
+            if (card_slap_down["type"] == "joker" && card.suit == 4) {
+                correct = true;
+            } else if (card_slap_down["type"] == "series" && card_slap_down["rank"] == card.rank) {
+                correct = true;
+            }
+            // STRAIGHT ??!!!
+        }
+    }
+    return correct;
+}
+
 
 function disable_all_clicking(){
     var hand = deck.hands[my_index];
@@ -412,10 +465,6 @@ function is_card_sup(card_1, card_2){
 }
 
 
-/**
-* Shuffles array in place.
-* @param {Array} a items An array containing the items.
-*/
 function shuffle(a) {
   var j, x, i;
   for (i = a.length - 1; i > 0; i--) {
@@ -480,6 +529,9 @@ gameSocket.onmessage = function(e) {
     } else if (data.hasOwnProperty('card_msg')) {
         var d = data.card_msg;
         update_game(d);
+    } else if (data.hasOwnProperty('slap_down_msg')) {
+        var d = data.slap_down_msg;
+        update_slap_down(d);
     } else if (data.hasOwnProperty('yaniv_msg')) {
         const yaniv_name = players[data.yaniv_msg.user_ind];
         print_chat(yaniv_name + ': ' + 'Yaniv !');
@@ -578,6 +630,7 @@ function update_my_turn_start() {
         who_starts++;
     }
     whose_turn = who_starts;
+    my_turn_before = false;
     my_turn = my_index == whose_turn ? true : false;
 };
 
@@ -587,6 +640,7 @@ function update_my_turn(user_ind) {
     } else {
         whose_turn = user_ind + 1;
     }
+    my_turn_before = my_turn ? true : false;
     my_turn = my_index == whose_turn ? true : false;
 };
 
@@ -598,6 +652,7 @@ function update_my_turn_left(left_index) {
     }
     whose_turn = who_starts;
     my_index = players.indexOf(user_name);
+    my_turn_before = false;
     my_turn = my_index == whose_turn ? true : false;
 };
 
@@ -606,10 +661,16 @@ function update_game(d) {
     update_my_turn(d.user_ind)
     place_names();
 
+    // Remove just_drawn
+    deck.hands[d.user_ind].forEach(function (card) {
+        card.just_drawn = false;
+    });
+
     // Give card to player
     var card;
     if (d.taken_card == -1) {
         card = deck.stack[0];
+        card.just_drawn = true;
         deck.stack.shift();
 
     } else {
@@ -658,14 +719,14 @@ function update_game(d) {
     for (var i = d.selected_cards_ind.length - 1; i >= 0; i--) {
         deck.hands[d.user_ind].splice(d.selected_cards_ind[i], 1);
     }
-    discard_sort_and_clicking(d.is_straight);
+    discard_sort_and_clicking(d.is_straight, false);
     deck.discard.forEach(function (card, ind) {
         var x = ind * discard_gap + 0.5 * window.innerWidth - window.innerWidth / 2;
         var y = 0.5 * window.innerHeight - window.innerHeight / 2;
         var change_side = d.user_ind == my_index ? false : true;
         card.animateTo({
-            delay: 200 + ind * speed, // wait 1 second + count * 2 ms
-            duration: speed,
+            delay: 200 + ind * speed * 1.5, // wait 1 second + count * 2 ms
+            duration: speed * 1.5,
             ease: 'quartOut',
             x: x,
             y: y,
@@ -690,13 +751,6 @@ function update_game(d) {
         var y = gap_y + ((1 - radius * Math.sin(deck.angular_positions[d.user_ind])) * window.innerHeight - window.innerHeight) / 2;
         var z = randomized_hand[hand_ind];
         var rot = deck.rots[d.user_ind];
-
-        // if (rot > 360) {
-        //     rot -= 360;
-        // } else if (rot < 0) {
-        //     rot += 360;
-        // }
-
         var change_side;
         if (d.user_ind == my_index) {
             if (card.side == 'back') {
@@ -708,8 +762,8 @@ function update_game(d) {
             }
         }
         card.animateTo({
-            delay: 200 + hand_ind * speed, // wait 1 second + count * 2 ms
-            duration: speed,
+            delay: 200 + hand_ind * speed * 1.5, // wait 1 second + count * 2 ms
+            duration: speed * 1.5,
             ease: 'quartOut',
             x: x,
             y: y,
@@ -720,17 +774,17 @@ function update_game(d) {
     });
 
     // Enable clicking for the current player
-    if (my_turn) {
-        deck.hands[my_index].forEach(function (card) {
-            card.enableClicking();
-        });
-    }
+    // if (my_turn) {
+    deck.hands[my_index].forEach(function (card) {
+        card.enableClicking();
+    });
+    // }
 };
 
 
 
 
-function discard_sort_and_clicking(is_straight) {
+function discard_sort_and_clicking(is_straight, is_slap_down) {
     if (is_straight) {
         var nb_jokers = 0;
         deck.discard.forEach(function (card) {
@@ -764,18 +818,105 @@ function discard_sort_and_clicking(is_straight) {
             count++;
         }
         //Enable clicking only in the extreme
-        if (my_turn) {
-          deck.discard[0].enableClicking();
-          deck.discard[deck.discard.length - 1].enableClicking();
+        if (my_turn || (my_turn_before && !is_slap_down)) {
+            deck.discard[0].enableClicking();
+            deck.discard[deck.discard.length - 1].enableClicking();
         }
     } else {
-        if (my_turn) {
-          deck.discard.forEach(function (card) {
-              card.enableClicking();
-          });
+        if (my_turn || (my_turn_before && !is_slap_down)) {
+            deck.discard.forEach(function (card) {
+                card.enableClicking();
+            });
         }
     }
 };
+
+
+
+
+
+
+function update_slap_down(d) {
+    // Remove just_drawn and change clickable
+    // Remove card from hand, put it in discard
+    // Sort hand
+    // Sort discard
+    var ind = d.selected_cards_ind[0];
+    var card = deck.hands[d.user_ind][ind];
+    // card.just_drawn = false;
+    card.selected = false;
+    card.location = -2;
+    deck.discard.push(card);
+    for (var i = d.selected_cards_ind.length - 1; i >= 0; i--) {
+        deck.hands[d.user_ind].splice(d.selected_cards_ind[i], 1);
+    }
+    discard_sort_and_clicking(false, true);
+    deck.discard.forEach(function (card, ind) {
+        var x = ind * discard_gap + 0.5 * window.innerWidth - window.innerWidth / 2;
+        var y = 0.5 * window.innerHeight - window.innerHeight / 2;
+        // var change_side = d.user_ind == my_index ? false : true;
+        var change_side = false;
+        if (d.user_ind != my_index && card.just_drawn) {
+            change_side = true;
+            card.just_drawn = false;
+        }
+        card.animateTo({
+            delay: 200 + ind * speed * 1.5, // wait 1 second + count * 2 ms
+            duration: speed * 1.5,
+            ease: 'quartOut',
+            x: x,
+            y: y,
+            rot: 0,
+            z_end: ind,
+            change_side: change_side,
+        });
+    });
+
+    // Place the new card in the hand and sort and ENABLECLICKING if myturn
+    bubble_sort_cards(deck.hands[d.user_ind]);
+    // Randomize position of oppenents' cards
+    var randomized_hand = [...Array(deck.hands[d.user_ind].length).keys()];
+    if (my_index != d.user_ind) {
+        shuffle(randomized_hand);
+    }
+    deck.hands[d.user_ind].forEach(function (card, hand_ind) {
+        var gap = d.user_ind == my_index ? my_gap : others_gap;
+        var gap_x = gap * Math.sin((90 - deck.rots[d.user_ind]) * Math.PI / 180) * (randomized_hand[hand_ind] - 2);
+        var gap_y = gap * Math.cos((90 - deck.rots[d.user_ind]) * Math.PI / 180) * (randomized_hand[hand_ind] - 2);
+        var x = gap_x + ((1 + radius * Math.cos(deck.angular_positions[d.user_ind])) * window.innerWidth - window.innerWidth) / 2;
+        var y = gap_y + ((1 - radius * Math.sin(deck.angular_positions[d.user_ind])) * window.innerHeight - window.innerHeight) / 2;
+        var z = randomized_hand[hand_ind];
+        var rot = deck.rots[d.user_ind];
+        var change_side;
+        if (d.user_ind == my_index) {
+            if (card.side == 'back') {
+                change_side = true;
+            }
+        } else {
+            if (card.side == 'front') {
+                change_side = true;
+            }
+        }
+        card.animateTo({
+            delay: 200 + hand_ind * speed * 1.5, // wait 1 second + count * 2 ms
+            duration: speed * 1.5,
+            ease: 'quartOut',
+            x: x,
+            y: y,
+            z_end: z,
+            rot: rot,
+            change_side: change_side
+        });
+    });
+
+    // Enable clicking for the current player
+    // if (my_turn) {
+    deck.hands[my_index].forEach(function (card) {
+        card.enableClicking();
+    });
+    // }
+};
+
 
 
 
