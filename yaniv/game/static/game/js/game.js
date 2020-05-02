@@ -20,7 +20,7 @@ var card_slap_down;
 const speed = 200;
 const hand_size = 5;
 const radius = 0.6;
-const min_yaniv = 7;
+const min_yaniv = 70;
 const asaf_cost = 30;
 const cut_level = 50;
 const losing_score = 200;
@@ -63,6 +63,38 @@ Connector.prototype.emit = function(type, msg) {
     });
 }
 var con = new Connector(wsGameAdress);
+
+
+
+
+
+
+
+
+// Change the selector if needed
+var $table = $('table.scroll'),
+    $bodyCells = $table.find('tbody tr:first').children(),
+    colWidth;
+
+// Adjust the width of thead cells when window resizes
+$(window).resize(function() {
+    // Get the tbody columns width array
+    colWidth = $bodyCells.map(function() {
+        return $(this).width();
+    }).get();
+
+    // Set the width of thead columns
+    $table.find('thead tr').children().each(function(i, v) {
+        $(v).width(colWidth[i]);
+    });
+
+    if (document.getElementsByTagName('thead')[0] !== undefined) {
+        document.getElementsByTagName('thead')[0].style.width = document.getElementsByTagName('tbody')[0].scrollWidth + "px";
+    }
+}).resize(); // Trigger resize handler
+
+
+
 
 
 
@@ -507,10 +539,7 @@ gameSocket.onmessage = function(e) {
     } else if (data.hasOwnProperty('connect_msg')) {
         players = data.connect_msg.users_list;
         nb_users = players.length;
-        $("#game-scores").empty();
-        players.forEach(function(player) {
-            $("#game-scores").append('<li>' + player + ': ' + 0 + '</li>');
-        });
+        create_table_scores();
         print_chat(data.connect_msg.new_user_name + ' has joined the room.');
     } else if (data.hasOwnProperty('ready_msg')) {
         print_chat('Go!');
@@ -536,16 +565,13 @@ gameSocket.onmessage = function(e) {
         const yaniv_name = players[data.yaniv_msg.user_ind];
         print_chat(yaniv_name + ': ' + 'Yaniv !');
         var end = update_scores(data.yaniv_msg.user_ind);
-        $("#game-scores").empty();
-        players.forEach(function(player, ind) {
-            $("#game-scores").append('<li>' + player + ': ' + scores[ind] + '</li>');
-        });
+        update_table_scores();
         deck.unmount();
         if (end) {
             print_chat(get_winner() + ' has won!');
         } else {
             cards_order = data.yaniv_msg.cards_order;
-            update_my_turn_start()
+            update_my_turn_start();
             start_round();
         }
     } else if (data.hasOwnProperty('disconnect_msg')) {
@@ -580,10 +606,7 @@ gameSocket.onmessage = function(e) {
                 var left_index = players.indexOf(left_name);
                 players.splice(left_index, 1);
                 nb_users--;
-                $("#game-scores").empty();
-                players.forEach(function(player) {
-                    $("#game-scores").append('<li>' + player + ': ' + 0 + '</li>');
-                });
+                create_table_scores();
             }
         }
     } else {
@@ -591,6 +614,41 @@ gameSocket.onmessage = function(e) {
     }
 };
 
+
+
+
+
+
+function create_table_scores() {
+    var table = document.getElementById("table-scores");
+    table.deleteTHead();
+    while(table.rows.length > 0) {
+      table.deleteRow(0);
+    }
+    var thead = table.createTHead();
+    var row = table.insertRow(0);
+    var cell;
+    for (var i=0; i<players.length; i++){
+        thead.appendChild(document.createElement("th")).
+        appendChild(document.createTextNode(players[i]));
+        cell = row.insertCell(i);
+        cell.innerHTML = "0";
+    }
+    table.getElementsByTagName('thead')[0].style.width = table.getElementsByTagName('tbody')[0].scrollWidth + "px";
+};
+
+
+
+function update_table_scores() {
+    var table = document.getElementById("table-scores");
+    var row = table.insertRow(-1);
+    var cell;
+    for (var i=0; i<players.length; i++){
+        cell = row.insertCell(i);
+        cell.innerHTML = String(scores[i]);
+    }
+    table.getElementsByTagName('thead')[0].style.width = table.getElementsByTagName('tbody')[0].scrollWidth + "px";
+};
 
 
 

@@ -8,15 +8,17 @@
     <!-- <link rel="stylesheet" href="https://deck-of-cards.js.org/example.css"> -->
     <link rel="stylesheet" href="{% static 'game/deck-of-cards-master/example/example.css' %}">
     <link rel="stylesheet" href="{% static 'game/jQuery-ToggleButton/toggle.button.css' %}">
+    <link rel="stylesheet" href="{% static 'game/css/game.css' %}">
     <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
     <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
     <script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.10.4/jquery-ui.min.js"></script>
     <script src="{% static 'game/jQuery-ToggleButton/toggle.button.js' %}"></script>
+
 </head>
 <body>
     <p>Room: {{ room_name }}</p>
-    <p>Scores:</p>
-    <ul id="game-scores"></ul>
+    <table class="scroll" id="table-scores"></table>
+
     <textarea id="game-log" cols="50" rows="20"></textarea><br>
     <input id="game-message-input" type="text" size="35"><br>
     <input id="game-message-submit" type="button" value="Send">

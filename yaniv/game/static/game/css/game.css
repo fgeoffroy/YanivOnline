@@ -1,0 +1,58 @@
+table.scroll {
+    table-layout: fixed;
+    width: 25%;
+    /* border-collapse: collapse; */
+    border-spacing: 0;
+    border: 2px solid black;
+}
+
+table.scroll tbody,
+table.scroll thead { display: block; }
+
+thead tr th {
+    height: 30px;
+    line-height: 30px;
+    /* text-align: left; */
+}
+
+table.scroll tbody {
+    height: 100px;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+
+tbody { border-top: 2px solid black; }
+
+tbody td, thead th {
+    width: 1%;
+    /* width: 150px; */
+    border-left: 1px solid black;
+    /* white-space: nowrap; */
+    text-align: center;
+
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    -ms-word-break: break-all;
+    /* This is the dangerous one in WebKit, as it breaks things wherever */
+    word-break: break-all;
+    /* Instead use this non-standard one: */
+    word-break: break-word;
+    /* Adds a hyphen where the word breaks, if supported (No Blink) */
+    -ms-hyphens: auto;
+    -moz-hyphens: auto;
+    -webkit-hyphens: auto;
+    hyphens: auto;
+}
+
+tbody td:last-child, thead th:last-child {
+    border-right: none;
+}
+
+
+
+
+textarea
+{
+  width:25%;
+}
