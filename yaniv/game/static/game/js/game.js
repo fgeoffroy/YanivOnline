@@ -54,7 +54,7 @@ $(window).resize(function() {
     });
 
     if (document.getElementsByTagName('thead')[0] !== undefined) {
-        document.getElementsByTagName('thead')[0].style.width = document.getElementsByTagName('tbody')[0].scrollWidth + "px";
+        document.getElementsByTagName('thead')[0].style.width = document.getElementsByTagName('tbody')[0].scrollWidth - 1 + "px";
     }
 }).resize(); // Trigger resize handler
 
@@ -658,7 +658,7 @@ function create_table_scores() {
         cell = row.insertCell(i);
         cell.innerHTML = "0";
     }
-    table.getElementsByTagName('thead')[0].style.width = table.getElementsByTagName('tbody')[0].scrollWidth + "px";
+    table.getElementsByTagName('thead')[0].style.width = table.getElementsByTagName('tbody')[0].scrollWidth - 1 + "px";
 };
 
 
@@ -671,7 +671,8 @@ function update_table_scores() {
         cell = row.insertCell(i);
         cell.innerHTML = String(scores[i]);
     }
-    table.getElementsByTagName('thead')[0].style.width = table.getElementsByTagName('tbody')[0].scrollWidth + "px";
+    table.getElementsByTagName('thead')[0].style.width = table.getElementsByTagName('tbody')[0].scrollWidth - 1 + "px";
+    table.getElementsByTagName('tbody')[0].scrollTop = table.getElementsByTagName('tbody')[0].scrollHeight;
 };
 
 
