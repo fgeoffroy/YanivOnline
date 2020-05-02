@@ -1,6 +1,6 @@
 table.scroll {
     table-layout: fixed;
-    width: 25%;
+    /* width: 25%; */
     /* border-collapse: collapse; */
     border-spacing: 0;
     border: 2px solid black;
@@ -47,12 +47,4 @@ tbody td, thead th {
 
 tbody td:last-child, thead th:last-child {
     border-right: none;
-}
-
-
-
-
-textarea
-{
-  width:25%;
 }

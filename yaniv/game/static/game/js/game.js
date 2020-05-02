@@ -20,10 +20,51 @@ var card_slap_down;
 const speed = 200;
 const hand_size = 5;
 const radius = 0.6;
-const min_yaniv = 70;
+const min_yaniv = 7;
 const asaf_cost = 30;
 const cut_level = 50;
 const losing_score = 200;
+const left_column_width = 0.25;  // fraction
+const space_columns = 0.0;  // fraction
+const right_column_width = 1 - left_column_width - space_columns;  // fraction
+
+
+
+
+
+document.getElementById("table-scores").style.width = 100 * left_column_width + "%";
+document.getElementById("game-log").style.width = 100 * left_column_width + "%";
+document.getElementById("game-message-input").style.width = 100 * left_column_width * 4 / 5 + "%";
+document.getElementById("game-message-submit").style.width = 100 * left_column_width * 1 / 5 + "%";
+
+// Change the selector if needed
+var $table = $('table.scroll'),
+    $bodyCells = $table.find('tbody tr:first').children(),
+    colWidth;
+// Adjust the width of thead cells when window resizes
+$(window).resize(function() {
+    // Get the tbody columns width array
+    colWidth = $bodyCells.map(function() {
+        return $(this).width();
+    }).get();
+
+    // Set the width of thead columns
+    $table.find('thead tr').children().each(function(i, v) {
+        $(v).width(colWidth[i]);
+    });
+
+    if (document.getElementsByTagName('thead')[0] !== undefined) {
+        document.getElementsByTagName('thead')[0].style.width = document.getElementsByTagName('tbody')[0].scrollWidth + "px";
+    }
+}).resize(); // Trigger resize handler
+
+
+
+
+
+
+
+
 
 const wsGameAdress = 'ws://'
                   + window.location.host
@@ -63,41 +104,6 @@ Connector.prototype.emit = function(type, msg) {
     });
 }
 var con = new Connector(wsGameAdress);
-
-
-
-
-
-
-
-
-// Change the selector if needed
-var $table = $('table.scroll'),
-    $bodyCells = $table.find('tbody tr:first').children(),
-    colWidth;
-
-// Adjust the width of thead cells when window resizes
-$(window).resize(function() {
-    // Get the tbody columns width array
-    colWidth = $bodyCells.map(function() {
-        return $(this).width();
-    }).get();
-
-    // Set the width of thead columns
-    $table.find('thead tr').children().each(function(i, v) {
-        $(v).width(colWidth[i]);
-    });
-
-    if (document.getElementsByTagName('thead')[0] !== undefined) {
-        document.getElementsByTagName('thead')[0].style.width = document.getElementsByTagName('tbody')[0].scrollWidth + "px";
-    }
-}).resize(); // Trigger resize handler
-
-
-
-
-
-
 
 
 
@@ -189,8 +195,10 @@ function start_round() {
             var gap = j == my_index ? my_gap : others_gap;
             var gap_x = gap * Math.sin((90 - deck.rots[j]) * Math.PI / 180) * (hand_ind - 2);
             var gap_y = gap * Math.cos((90 - deck.rots[j]) * Math.PI / 180) * (hand_ind - 2);
-            var x = gap_x + ((1 + radius * Math.cos(deck.angular_positions[j])) * window.innerWidth - window.innerWidth) / 2;
-            var y = gap_y + ((1 - radius * Math.sin(deck.angular_positions[j])) * window.innerHeight - window.innerHeight) / 2;
+            var x = gap_x + x_radius_window(1 + radius * Math.cos(deck.angular_positions[j]));
+            var y = gap_y + y_radius_window(1 - radius * Math.sin(deck.angular_positions[j]));
+            // var x = gap_x + ((1 + radius * Math.cos(deck.angular_positions[j])) * window.innerWidth - window.innerWidth) / 2;
+            // var y = gap_y + ((1 - radius * Math.sin(deck.angular_positions[j])) * window.innerHeight - window.innerHeight) / 2;
             var z = hand_ind;
             var rot = deck.rots[j];
             var change_side = j == my_index ? true : false;
@@ -219,8 +227,10 @@ function start_round() {
     deck.discard.push(card);
     card.location = -2;
     if (my_turn) card.enableClicking();
-    var x = 0.5 * window.innerWidth - window.innerWidth / 2;
-    var y = 0.5 * window.innerHeight - window.innerHeight / 2;
+    // var x = 0.5 * window.innerWidth - window.innerWidth / 2;
+    // var y = 0.5 * window.innerHeight - window.innerHeight / 2;
+    var x = x_absolute_window(0.5);
+    var y = y_absolute_window(0.5);
     card.animateTo({
         delay: 1000 + count * speed, // wait 1 second + count * 2 ms
         duration: speed,
@@ -242,7 +252,21 @@ function start_round() {
 }
 
 
-
+function x_radius_window(x){
+    return (x * (window.innerWidth * right_column_width) - (window.innerWidth * right_column_width)) / 2 + (window.innerWidth * (1 - right_column_width) / 2);
+}
+function y_radius_window(y){
+    return (y * window.innerHeight - window.innerHeight) / 2;
+}
+function x_radius_window_names(x){
+    return (x * (window.innerWidth * right_column_width) - (window.innerWidth * right_column_width)) / 2 + (window.innerWidth * (1 - right_column_width));
+}
+function x_absolute_window(x){
+    return x * (window.innerWidth * right_column_width) - (window.innerWidth * right_column_width) / 2 + (window.innerWidth * (1 - right_column_width) / 2);
+}
+function y_absolute_window(y){
+    return y * window.innerHeight - window.innerHeight / 2;
+}
 
 
 function sort_deck(cards_order){
@@ -257,8 +281,8 @@ function sort_deck(cards_order){
     for (const ind of Array(deck.cards.length).keys()) {
         var card = deck.cards[ind];
         // card.i = ind;
-        var x = (- stack_left_shift) - ind / 4;
-        var y = -ind / 4;
+        var x = (- stack_left_shift) - ind / 4 + x_absolute_window(0.5);
+        var y = -ind / 4 + y_absolute_window(0.5);
         var z = ind;
         card.animateTo({
           delay: z * 2,
@@ -665,8 +689,10 @@ function place_names() {
         var t = document.createTextNode(players[i]);
         g.appendChild(t);
         g.style.position = "absolute";
-        var x = ((2 + radius * 1.4 * Math.cos(deck.angular_positions[i])) * window.innerWidth - window.innerWidth) / 2;
-        var y = ((2 - radius * 1.4 * Math.sin(deck.angular_positions[i])) * window.innerHeight - window.innerHeight) / 2;
+        var x = x_radius_window_names(2 + radius * 1.4 * Math.cos(deck.angular_positions[i]));
+        var y = y_radius_window(2 - radius * 1.4 * Math.sin(deck.angular_positions[i]));
+        // var x = ((2 + radius * 1.4 * Math.cos(deck.angular_positions[i])) * window.innerWidth - window.innerWidth) / 2;
+        // var y = ((2 - radius * 1.4 * Math.sin(deck.angular_positions[i])) * window.innerHeight - window.innerHeight) / 2;
         g.style.left = x+'px';
         g.style.top = y+'px';
         if (i == whose_turn) {
@@ -753,8 +779,8 @@ function update_game(d) {
         if (card.side == 'front') {
             card.setSide('back');
         }
-        var x = (- stack_left_shift)-ind / 4;
-        var y = -ind / 4;
+        var x = (- stack_left_shift)-ind / 4 + x_absolute_window(0.5);;
+        var y = -ind / 4 + y_absolute_window(0.5);;
         var z = ind;
         card.animateTo({
             delay: 200 + ind * 2,
@@ -779,8 +805,10 @@ function update_game(d) {
     }
     discard_sort_and_clicking(d.is_straight, false);
     deck.discard.forEach(function (card, ind) {
-        var x = ind * discard_gap + 0.5 * window.innerWidth - window.innerWidth / 2;
-        var y = 0.5 * window.innerHeight - window.innerHeight / 2;
+        var x = ind * discard_gap + x_absolute_window(0.5);
+        var y = y_absolute_window(0.5);
+        // var x = ind * discard_gap + 0.5 * window.innerWidth - window.innerWidth / 2;
+        // var y = 0.5 * window.innerHeight - window.innerHeight / 2;
         var change_side = d.user_ind == my_index ? false : true;
         card.animateTo({
             delay: 200 + ind * speed * 1.5, // wait 1 second + count * 2 ms
@@ -805,8 +833,10 @@ function update_game(d) {
         var gap = d.user_ind == my_index ? my_gap : others_gap;
         var gap_x = gap * Math.sin((90 - deck.rots[d.user_ind]) * Math.PI / 180) * (randomized_hand[hand_ind] - 2);
         var gap_y = gap * Math.cos((90 - deck.rots[d.user_ind]) * Math.PI / 180) * (randomized_hand[hand_ind] - 2);
-        var x = gap_x + ((1 + radius * Math.cos(deck.angular_positions[d.user_ind])) * window.innerWidth - window.innerWidth) / 2;
-        var y = gap_y + ((1 - radius * Math.sin(deck.angular_positions[d.user_ind])) * window.innerHeight - window.innerHeight) / 2;
+        var x = gap_x + x_radius_window(1 + radius * Math.cos(deck.angular_positions[d.user_ind]));
+        var y = gap_y + y_radius_window(1 - radius * Math.sin(deck.angular_positions[d.user_ind]));
+        // var x = gap_x + ((1 + radius * Math.cos(deck.angular_positions[d.user_ind])) * window.innerWidth - window.innerWidth) / 2;
+        // var y = gap_y + ((1 - radius * Math.sin(deck.angular_positions[d.user_ind])) * window.innerHeight - window.innerHeight) / 2;
         var z = randomized_hand[hand_ind];
         var rot = deck.rots[d.user_ind];
         var change_side;
@@ -910,8 +940,10 @@ function update_slap_down(d) {
     }
     discard_sort_and_clicking(false, true);
     deck.discard.forEach(function (card, ind) {
-        var x = ind * discard_gap + 0.5 * window.innerWidth - window.innerWidth / 2;
-        var y = 0.5 * window.innerHeight - window.innerHeight / 2;
+        var x = ind * discard_gap + x_absolute_window(0.5);
+        var y = y_absolute_window(0.5);
+        // var x = ind * discard_gap + 0.5 * window.innerWidth - window.innerWidth / 2;
+        // var y = 0.5 * window.innerHeight - window.innerHeight / 2;
         // var change_side = d.user_ind == my_index ? false : true;
         var change_side = false;
         if (d.user_ind != my_index && card.just_drawn) {
@@ -941,8 +973,10 @@ function update_slap_down(d) {
         var gap = d.user_ind == my_index ? my_gap : others_gap;
         var gap_x = gap * Math.sin((90 - deck.rots[d.user_ind]) * Math.PI / 180) * (randomized_hand[hand_ind] - 2);
         var gap_y = gap * Math.cos((90 - deck.rots[d.user_ind]) * Math.PI / 180) * (randomized_hand[hand_ind] - 2);
-        var x = gap_x + ((1 + radius * Math.cos(deck.angular_positions[d.user_ind])) * window.innerWidth - window.innerWidth) / 2;
-        var y = gap_y + ((1 - radius * Math.sin(deck.angular_positions[d.user_ind])) * window.innerHeight - window.innerHeight) / 2;
+        var x = gap_x + x_radius_window(1 + radius * Math.cos(deck.angular_positions[d.user_ind]));
+        var y = gap_y + y_radius_window(1 - radius * Math.sin(deck.angular_positions[d.user_ind]));
+        // var x = gap_x + ((1 + radius * Math.cos(deck.angular_positions[d.user_ind])) * window.innerWidth - window.innerWidth) / 2;
+        // var y = gap_y + ((1 - radius * Math.sin(deck.angular_positions[d.user_ind])) * window.innerHeight - window.innerHeight) / 2;
         var z = randomized_hand[hand_ind];
         var rot = deck.rots[d.user_ind];
         var change_side;
